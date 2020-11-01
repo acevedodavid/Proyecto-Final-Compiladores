@@ -1,0 +1,23 @@
+program Ejemplo;
+var
+  int i, j;
+  int Arreglo[ 10 ];
+  float valor;
+  int Matriz[3][8];
+  bool myBool = false;
+
+void module miFuncion()
+var float : varMiFuncion;
+{}
+
+if (myBool) then {
+  i = 0;
+  j = 1;
+} else {
+  i = 1;
+  j = 2;
+}
+
+main() {
+  write(i+j);
+}

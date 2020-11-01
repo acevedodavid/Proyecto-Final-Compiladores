@@ -10,6 +10,42 @@ import sys
 import cuboSemantico
 import tablaVariables
 
+current_function = 'global'
+current_type = ''
+current_var = ''
+
+constants = {}
+temps = {}
+nextConst = 1
+nextTemp = 1
+
+quadruples = [['GOTO',None,None,0]]
+
+symbols = {
+    'global': {
+        'param': {
+        },
+        'vars': {
+        }
+    },
+    'main': {
+        'param': {
+        },
+        'vars': {
+        }
+    }
+}
+
+# Stacks for quadruples
+stack_operands = [] # stack that keeps the operands before they are located in a quadruple (PilaO)
+stack_operators = [] # stack for operators (precedenece) (POper)
+stack_types = [] # stack that keeps track of the type every operand has; moves together with the stack for operands
+
+# Sets of available variables
+set_var_global = set()
+set_var_main = set()
+set_var_function = set()
+
 # Lexer
 
 # Declaration of tokens
@@ -96,8 +132,8 @@ t_MULT = r'\*'
 t_DIV = r'\/'
 
 # Constants
-t_CTE_INT = r'[0-9]+'
-t_CTE_FLOAT = r'[0-9]+\.[0-9]+'
+#t_CTE_INT = r'([0-9])+'
+#t_CTE_FLOAT = r'[0-9]+\.[0-9]+'
 t_CTE_CHAR = r'(\' [^ \' ]* \' )'
 
 
@@ -117,24 +153,18 @@ def t_error(t):
     t.lexer.skip(1)
 
 # Integer
-
-
-def t_CTEI(t):
+def t_CTE_INT(t):
     r'[0-9]+'
     t.value = int(t.value)
     return t
 
 # Float
-
-
-def t_CTEF(t):
+def t_CTE_FLOAT(t):
     r'[0-9]+\.[0-9]+'
     t.value = float(t.value)
     return t
 
 # New line
-
-
 def t_newline(t):
     r'\n+'
     t.lexer.lineno += t.value.count("\n")
@@ -146,11 +176,20 @@ lexer = lex.lex()
 
 
 def p_programa(p):
-    '''program : PROGRAM ID SEMICOLON vars aux_funcion MAIN LPAREN RPAREN bloque
-              | PROGRAM ID SEMICOLON vars MAIN LPAREN RPAREN bloque
-              | PROGRAM ID SEMICOLON aux_funcion MAIN LPAREN RPAREN bloque
-              | PROGRAM ID SEMICOLON MAIN LPAREN RPAREN bloque'''
-    p[0] = "complete"
+    '''program : PROGRAM ID SEMICOLON vars aux_funcion main
+              | PROGRAM ID SEMICOLON vars main
+              | PROGRAM ID SEMICOLON aux_funcion main
+              | PROGRAM ID SEMICOLON main'''
+    print("fin programa")
+    print("")
+    print("Quadruples")
+    counter = 1
+    for q in quadruples:
+        print(q)
+
+def p_main(p):
+    '''main : MAIN pn_current_function LPAREN RPAREN vars bloque
+            | MAIN pn_current_function LPAREN RPAREN bloque'''
 
 
 def p_aux_funcion(p):
@@ -159,8 +198,10 @@ def p_aux_funcion(p):
 
 
 def p_funcion(p):
-    '''funcion : tipo_retorno MODULE ID LPAREN parametros RPAREN COLON vars bloque
-               | tipo_retorno MODULE ID LPAREN parametros RPAREN COLON bloque'''
+    '''funcion : tipo_retorno MODULE ID pn_current_function LPAREN parametros RPAREN vars bloque
+               | tipo_retorno MODULE ID pn_current_function LPAREN parametros RPAREN bloque
+               | tipo_retorno MODULE ID pn_current_function LPAREN RPAREN vars bloque
+               | tipo_retorno MODULE ID pn_current_function LPAREN RPAREN bloque'''
 
 
 def p_vars(p):
@@ -168,19 +209,17 @@ def p_vars(p):
 
 
 def p_var(p):
-    '''var : tipo SEMICOLON lista_ids COLON
-           | tipo SEMICOLON lista_ids COLON var'''
-
+    '''var : tipo COLON lista_ids SEMICOLON
+           | tipo COLON lista_ids SEMICOLON var'''
 
 def p_tipo_retorno(p):
     '''tipo_retorno : tipo
-                    | VOID'''
-
+                    | VOID pn_current_type'''
 
 def p_tipo(p):
-    '''tipo : INT
-          | FLOAT
-          | CHAR'''
+    '''tipo : INT pn_current_type
+          | FLOAT pn_current_type
+          | CHAR pn_current_type'''
 
 
 def p_parametros(p):
@@ -196,11 +235,11 @@ def p_aux_lista_rec(p):
     '''aux_lista_rec : aux_lista
                     | aux_lista COMMA aux_lista_rec'''
 
-
+# Declaration of variable name and adds symbol to function
 def p_aux_lista(p):
-    '''aux_lista : ID LSQUARE CTE_INT RSQUARE LSQUARE CTE_INT RSQUARE
-                 | ID LSQUARE CTE_INT RSQUARE
-                 | ID'''
+    '''aux_lista : ID pn_add_symbol LSQUARE CTE_INT RSQUARE LSQUARE CTE_INT RSQUARE
+                 | ID pn_add_symbol LSQUARE CTE_INT RSQUARE
+                 | ID pn_add_symbol'''
 
 
 def p_escritura(p):
@@ -222,7 +261,6 @@ def p_bloque(p):
     '''bloque : LBRACKET estatutos RBRACKET
               | LBRACKET RBRACKET'''
 
-
 def p_estatutos(p):
     '''estatutos : estatuto estatutos
                   | estatuto'''
@@ -240,8 +278,8 @@ def p_estatuto(p):
 
 
 def p_asignacion(p):
-    '''asignacion : ID dimensiones ASSIGN expresion COLON
-                  | ID ASSIGN expresion COLON'''
+    '''asignacion : ID pn_push_operand_and_type dimensiones ASSIGN pn_push_operator expresion pn_assign SEMICOLON
+                  | ID pn_push_operand_and_type ASSIGN pn_push_operator expresion pn_assign SEMICOLON'''
 
 
 def p_retorno(p):
@@ -249,15 +287,14 @@ def p_retorno(p):
 
 
 def p_lectura(p):
-    'lectura : READ LPAREN aux_lectura RPAREN COLON'
+    'lectura : READ LPAREN aux_lectura RPAREN SEMICOLON'
 
 
 def p_aux_lectura(p):
-    '''aux_lectura : ID
-                   | ID dimensiones
-                   | ID aux_lectura
-                   | ID dimensiones aux_lectura'''
-
+    '''aux_lectura : ID pn_push_operand_and_type
+                   | ID pn_push_operand_and_type dimensiones
+                   | ID pn_push_operand_and_type COMMA aux_lectura
+                   | ID pn_push_operand_and_type dimensiones COMMA aux_lectura'''
 
 def p_letrero(p):
     '''letrero : QUOTATION aux_letrero QUOTATION
@@ -272,6 +309,14 @@ def p_aux_letrero(p):
 def p_decision(p):
     '''decision : IF LPAREN expresion RPAREN THEN bloque
                 | IF LPAREN expresion RPAREN THEN bloque ELSE bloque'''
+    exp_Type = list_tipo_variables.pop()
+    if exp_Type != 'bool' :
+        print("Error de tipo")
+        sys.exit()
+    else :
+        result = list_nombre_variables.pop()
+        quad = ["GOTOF", result, None, "resultado_salto"]
+        quadruples.append(quad)
 
 
 def p_llamada_void(p):
@@ -288,9 +333,8 @@ def p_aux_llamada(p):
 
 
 def p_no_condicional(p):
-    '''no_condicional : FOR ID dimensiones ASSIGN expresion TO expresion DO bloque
-                      | FOR ID ASSIGN expresion TO
-                      | expresion DO bloque'''
+    '''no_condicional : FOR ID pn_push_operand_and_type dimensiones ASSIGN pn_push_operator expresion TO expresion DO bloque
+                      | FOR ID pn_push_operand_and_type ASSIGN pn_push_operator expresion TO expresion DO bloque'''
 
 
 def p_dimensiones(p):
@@ -325,15 +369,15 @@ def p_aux_comparacion(p):
 
 
 def p_exp(p):
-    '''exp : termino
-           | termino PLUS exp
-           | termino MINUS exp'''
+    '''exp : termino pn_addition_substraction
+           | termino pn_addition_substraction PLUS pn_push_operator exp
+           | termino pn_addition_substraction MINUS pn_push_operator exp'''
 
 
 def p_termino(p):
-    '''termino : factor
-             | factor MULT termino
-             | factor DIV termino'''
+    '''termino : factor pn_multiplication_division
+             | factor pn_multiplication_division MULT pn_push_operator termino
+             | factor pn_multiplication_division DIV pn_push_operator termino'''
 
 
 def p_factor(p):
@@ -347,31 +391,266 @@ def p_factor(p):
 
 
 def p_var_cte(p):
-    '''var_cte : ID
-               | CTE_INT
-               | CTE_FLOAT'''
-
+    '''var_cte : ID pn_push_operand_and_type
+               | CTE_INT pn_push_constant_and_type
+               | CTE_FLOAT pn_push_constant_and_type'''
 
 def p_error(p):
     print("Error de sintaxis en '%s'" % p.value)
+    sys.exit()
+
+# Puntos Neuralgicos (PN)
+
+# Update current function
+def p_pn_current_function(p):
+    'pn_current_function : '
+    global current_function
+    current_function = p[-1]
+
+# Update current type
+def p_pn_current_type(p):
+    'pn_current_type : '
+    global current_type
+    current_type = p[-1]
+
+# Add symbol to the dictionary of symbols
+def p_pn_add_symbol(p):
+    'pn_add_symbol : '
+    # Guardar el id y el tipo del simbolo encontrado
+    print("\npn_add_symbol")
+    global symbols, current_type, current_function, set_var_global, set_var_main, set_var_function
+    if (symbols[current_function].get(p[-1]) is None):
+        if (current_function == 'global'):
+            if (p[-1] in set_var_global) :
+                print("Variable has already been declared globally")
+                sys.exit()
+            else :
+                set_var_global.add(p[-1])
+        elif (current_function == 'main'):
+            if (p[-1] in set_var_global) :
+                print("Variable has already been declared globally")
+                sys.exit()
+            elif (p[-1] in set_var_main):
+                print("Variable has already been declared in function: main")
+                sys.exit()
+            else :
+                set_var_main.add(p[-1])
+        else:
+            if (p[-1] in set_var_global) :
+                print("Variable has already been declared globally")
+                sys.exit()
+            elif (p[-1] in set_var_main):
+                # To Do
+                # agregar al error en que funcion esta repetida
+                print("Variable has already been declared in function")
+                sys.exit()
+            else :
+                set_var_function.add(tuple((current_function,p[-1])))
+
+        symbols[current_function]['vars'][p[-1]] = {
+            'name': p[-1],
+            'type': current_type
+        }
+        print(p[-1])
+    else :
+        print("Error: variable ya habia sido declarada")
+
+def p_pn_push_constant_and_type(p):
+    'pn_push_constant_and_type : '
+    print("\npush_constant_and_type")
+    stack_operands.append('ct')
+    stack_types.append('int')
+    #global constants
+    #cName = 'c'
+    #print(cName)
+    #constants[cName] = {
+    #    'value': p[-1],
+    #    'type': type(p[-1])
+    #}
+    #stack_operands.append(cName)
+    #stack_types.append(type(p[-1]))
+    #nextConst += 1
 
 
+
+# Add variable name and type to the respective stacks
+def p_pn_push_operand_and_type(p):
+    'pn_push_operand_and_type : '
+    print("\npush_operand_and_type")
+    global symbols, current_function, stack_var_names, stack_var_types
+    if(symbols[current_function]['vars'].get(p[-1]) is not None):
+        stack_operands.append(symbols[current_function]['vars'].get(p[-1])['name'])
+        stack_types.append(symbols[current_function]['vars'].get(p[-1])['type'])
+    elif(symbols['global']['vars'].get(p[-1]) is not None):
+        stack_operands.append(symbols['global']['vars'].get(p[-1])['name'])
+        stack_types.append(symbols['global']['vars'].get(p[-1])['type'])
+    elif(symbols[current_function]['params'].get(p[-1]) is not None):
+        stack_operands.append(symbols[current_function]['params'].get(p[-1])['name'])
+        stack_types.append(symbols[current_function]['params'].get(p[-1])['type'])
+    else :
+        print("Variable not defined")
+        sys.exit()
+    print(p[-1])
+    print(stack_operands)
+    print(stack_operators)
+
+def p_pn_push_operator(p):
+    'pn_push_operator : '
+    print("\npush_operator")
+    stack_operators.append(p[-1])
+    print(stack_operators)
+
+## PN aritmetica
+
+def p_pn_addition_substraction(p):
+    'pn_addition_substraction : '
+    print("\npn_addition_substraction")
+    global stack_operators, stack_operands, nextTemp
+    print(stack_operands)
+    print(stack_operators)
+    if (len(stack_operators) > 0):
+        if (stack_operators[-1] == '+' or stack_operators[-1] == '-'):
+            right_operand = stack_operands.pop()
+            right_type = stack_types.pop()
+            left_operand = stack_operands.pop()
+            left_type = stack_types.pop()
+            operator = stack_operators.pop()
+
+            result_type = cuboSemantico.typeOperator[left_type][right_type][operator]
+
+            if result_type is not None :
+                result = 't' + str(nextTemp)
+                quad = [operator,left_operand,right_operand,result]
+                quadruples.append(quad)
+                stack_operands.append(result)
+                stack_types.append(result_type)
+                nextTemp += 1
+            else:
+                # To Do
+                # Hacer mas especifico este error
+                print("Error en suma o resta")
+                sys.exit()
+
+def p_pn_multiplication_division(p):
+    'pn_multiplication_division : '
+    print("\npn_multiplication_division")
+    global stack_operators, stack_operands, nextTemp
+    print(stack_operands)
+    print(stack_operators)
+    if (len(stack_operators) > 0):
+        if (stack_operators[-1] == '*' or stack_operators[-1] == '/'):
+            right_operand = stack_operands.pop()
+            right_type = stack_types.pop()
+            left_operand = stack_operands.pop()
+            left_type = stack_types.pop()
+            operator = stack_operators.pop()
+
+            result_type = cuboSemantico.typeOperator[left_type][right_type][operator]
+
+            if result_type is not None :
+                result = 't' + str(nextTemp)
+                quad = [operator,left_operand,right_operand,result]
+                quadruples.append(quad)
+                stack_operands.append(result)
+                stack_types.append(result_type)
+                nextTemp += 1
+            else:
+                # To Do
+                # Hacer mas especifico este error
+                print("Error en multiplicacion o division")
+                sys.exit()
+
+## PN estatutos
+
+def p_pn_assign(p):
+    'pn_assign : '
+    print("\npn_assign")
+    global stack_operators, stack_operands, stack_types, nextTemp
+    print(stack_operands)
+    print(stack_types)
+    print(stack_operators)
+
+    if (len(stack_operators) > 0):
+        if (stack_operators[-1] == '='):
+            right_operand = stack_operands.pop()
+            right_type = stack_types.pop()
+            left_operand = stack_operands.pop()
+            left_type = stack_types.pop()
+            operator = stack_operators.pop()
+
+            result_type = cuboSemantico.typeOperator[left_type][right_type][operator]
+
+            if result_type is not None :
+                result = 't' + str(nextTemp)
+                quad = [operator,right_operand,None,left_operand]
+                quadruples.append(quad)
+                stack_operands.append(result)
+                stack_types.append(result_type)
+                nextTemp += 1
+            else:
+                # To Do
+                # Hacer mas especifico este error
+                print("Error en asginacion")
+                sys.exit()
+    print("saliendo assign")
 parser = yacc.yacc()
 
-#data = raw_input("Introduzca nombre del archivo: ")
+if len(sys.argv) != 2:
+    data = input("Introduzca nombre del archivo: ")
+else:
+    data = sys.argv[1]
 
-# try:
-#    f = open(data, 'r')
-#    s = f.read()
-#    f.close()
 
-# lexer.input(s)
-# for tok in lexer:
-# print(tok)
+try:
+    f = open(data, 'r')
+    s = f.read()
+    f.close()
 
-#    if parser.parse(s,lexer = lexer) == "complete":
-#        print("El programa es valido")
-#    else:
-#        print("El programa es invalido")
-# except:
-#    print("El programa es invalido")
+    #lexer.input(s)
+    #for tok in lexer:
+    #    print(tok)
+
+except:
+    print("No se pudo abrir el archivo")
+
+try:
+    parser.parse(s, lexer = lexer)
+    object_code = {
+        'symbols': symbols,
+        'quadruples': quadruples,
+        'constants': constants
+    }
+    #with open(data + 'o', 'w') as file:
+        #file.write(str(object_code))
+except:
+    print("No se pudo compilar el programa")
+
+
+
+
+
+# Compila el programa.
+#with open(data, 'r', newline='\n') as file:
+#    parser.parse(file.read())
+#    object_code = {
+#        'symbols': symbols,
+#        'quadruples': quadruples,
+#        'constants': constants
+#    }
+#    with open(data + 'o', 'w') as file:
+#        file.write(str(object_code))
+
+
+
+
+
+#lexer.input(s)
+#for tok in lexer:
+#print(tok)
+
+#   if parser.parse(s,lexer = lexer) == "complete":
+#       print("El programa es valido")
+#   else:
+#       print("El programa es invalido")
+#except:
+#   print("El programa es invalido")
