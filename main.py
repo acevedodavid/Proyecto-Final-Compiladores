@@ -183,13 +183,11 @@ lexer = lex.lex()
 
 
 def p_program(p):
-    '''program : PROGRAM ID SEMICOLON vars aux_funcion main
-              | PROGRAM ID SEMICOLON vars main
-              | PROGRAM ID SEMICOLON aux_funcion main
-              | PROGRAM ID SEMICOLON main'''
-    print("fin programa")
-    print("")
-    print("Quadruples")
+    '''program : PROGRAM ID SEMICOLON vars aux_funcion pn_go_main main pn_program_end
+              | PROGRAM ID SEMICOLON vars pn_go_main main pn_program_end
+              | PROGRAM ID SEMICOLON aux_funcion pn_go_main main pn_program_end
+              | PROGRAM ID SEMICOLON pn_go_main main pn_program_end'''
+    print("\nQuadruples")
     counter = 0
     for q in quadruples:
         print(str(counter) + ". " + str(q))
@@ -206,10 +204,10 @@ def p_aux_funcion(p):
 
 
 def p_funcion(p):
-    '''funcion : tipo_retorno MODULE ID pn_current_function LPAREN parametros RPAREN vars bloque
-               | tipo_retorno MODULE ID pn_current_function LPAREN parametros RPAREN bloque
-               | tipo_retorno MODULE ID pn_current_function LPAREN RPAREN vars bloque
-               | tipo_retorno MODULE ID pn_current_function LPAREN RPAREN bloque'''
+    '''funcion : tipo_retorno MODULE ID pn_add_function LPAREN parametros RPAREN vars bloque
+               | tipo_retorno MODULE ID pn_add_function LPAREN parametros RPAREN bloque
+               | tipo_retorno MODULE ID pn_add_function LPAREN RPAREN vars bloque
+               | tipo_retorno MODULE ID pn_add_function LPAREN RPAREN bloque'''
 
 
 def p_vars(p):
@@ -409,6 +407,17 @@ def p_pn_current_type(p):
     'pn_current_type : '
     global current_type
     current_type = p[-1]
+
+def p_pn_go_main(p):
+    'pn_go_main : '
+    global quadruples
+    quadruples[0][3] = len(quadruples)
+
+def p_pn_program_end(p):
+    'pn_program_end : '
+    global quadruples
+    quad = ['End',None,None,None]
+    quadruples.append(quad)
 
 # Add symbol to the dictionary of symbols when they are declared
 def p_pn_add_symbol(p):
@@ -767,14 +776,30 @@ def p_pn_for_go_back(p):
     forOnFalse = stack_jumps.pop()
 
     forComparison = stack_jumps.pop()
+    # To do
+    # Cambiar para agregar constante que sea 1 y agregar el id de la variable del for
+    quad = ['+','id','1','id']
+    quadruples.append(quad)
     quad = ['GOTO',None,None,forComparison]
     quadruples.append(quad)
 
     fill(forOnFalse,len(quadruples))
 
-
-
 # Funciones
+def p_pn_add_function(p):
+    'pn_add_function : '
+    global symbols, current_function
+    current_function = p[-1]
+    if (symbols.get(p[-1]) is None):
+        symbols[p[-1]] = {
+            'start': len(quadruples),
+            'return_type': current_type,
+            'param': {},
+            'vars': {}
+        }
+    else:
+        print("Error: Function has already been declared")
+        sys.exit()
 
 # retorno
 
