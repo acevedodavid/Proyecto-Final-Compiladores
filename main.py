@@ -4,20 +4,14 @@
 #   Proyecto Final           #
 ##############################
 
+# To Do
+# Corregir que guarde cuando se introducen matrices
+
 import lex
 import yacc
 import sys
 import cuboSemantico
 import tablaVariables
-
-current_function = 'global'
-current_type = ''
-current_var = ''
-
-constants = {}
-temps = {}
-nextConst = 1
-nextTemp = 1
 
 quadruples = [['GOTO',None,None,0]]
 
@@ -36,12 +30,22 @@ symbols = {
     }
 }
 
+constants = {}
+temps = {}
+nextConst = 1
+nextTemp = 1
+
+# Aux variables to keep track of current data
+current_function = 'global'
+current_type = ''
+current_var = ''
+
 # Stacks for quadruples
 stack_operands = [] # stack that keeps the operands before they are located in a quadruple (PilaO)
 stack_operators = [] # stack for operators (precedenece) (POper)
 stack_types = [] # stack that keeps track of the type every operand has; moves together with the stack for operands
 
-# Sets of available variables
+# Sets of available variables (used to check if variable already exists)
 set_var_global = set()
 set_var_main = set()
 set_var_function = set()
@@ -175,7 +179,7 @@ lexer = lex.lex()
 # Parser
 
 
-def p_programa(p):
+def p_program(p):
     '''program : PROGRAM ID SEMICOLON vars aux_funcion main
               | PROGRAM ID SEMICOLON vars main
               | PROGRAM ID SEMICOLON aux_funcion main
@@ -247,10 +251,10 @@ def p_escritura(p):
 
 
 def p_aux_escritura(p):
-    '''aux_escritura : letrero
-                     | expresion
-                     | letrero COMMA aux_escritura
-                     | expresion COMMA aux_escritura'''
+    '''aux_escritura : pn_push_write_operator letrero pn_write
+                     | pn_push_write_operator expresion pn_write
+                     | pn_push_write_operator letrero pn_write COMMA aux_escritura
+                     | pn_push_write_operator expresion pn_write COMMA aux_escritura'''
 
 
 def p_condicional(p):
@@ -260,6 +264,7 @@ def p_condicional(p):
 def p_bloque(p):
     '''bloque : LBRACKET estatutos RBRACKET
               | LBRACKET RBRACKET'''
+
 
 def p_estatutos(p):
     '''estatutos : estatuto estatutos
@@ -272,7 +277,6 @@ def p_estatuto(p):
                 | escritura
                 | retorno
                 | lectura
-                | llamada_void
                 | decision
                 | no_condicional'''
 
@@ -290,11 +294,13 @@ def p_lectura(p):
     'lectura : READ LPAREN aux_lectura RPAREN SEMICOLON'
 
 
+# To Do
+# Corregir para que guarde que es una matriz
 def p_aux_lectura(p):
-    '''aux_lectura : ID pn_push_operand_and_type
-                   | ID pn_push_operand_and_type dimensiones
-                   | ID pn_push_operand_and_type COMMA aux_lectura
-                   | ID pn_push_operand_and_type dimensiones COMMA aux_lectura'''
+    '''aux_lectura : pn_push_read_operator ID pn_push_operand_and_type pn_read
+                   | pn_push_read_operator ID pn_push_operand_and_type pn_read dimensiones
+                   | pn_push_read_operator ID pn_push_operand_and_type pn_read COMMA aux_lectura
+                   | pn_push_read_operator ID pn_push_operand_and_type pn_read dimensiones COMMA aux_lectura'''
 
 def p_letrero(p):
     '''letrero : QUOTATION aux_letrero QUOTATION
@@ -318,18 +324,13 @@ def p_decision(p):
         quad = ["GOTOF", result, None, "resultado_salto"]
         quadruples.append(quad)
 
-
-def p_llamada_void(p):
-    'llamada_void : llamada'
-
-
 def p_llamada(p):
-    'llamada : ID LPAREN aux_llamada RPAREN'
+    'llamada : ID LPAREN aux_llamada RPAREN SEMICOLON'
 
 
 def p_aux_llamada(p):
     '''aux_llamada : expresion
-                   | expresion aux_llamada'''
+                   | expresion COMMA aux_llamada'''
 
 
 def p_no_condicional(p):
@@ -413,11 +414,11 @@ def p_pn_current_type(p):
     global current_type
     current_type = p[-1]
 
-# Add symbol to the dictionary of symbols
+# Add symbol to the dictionary of symbols when they are declared
 def p_pn_add_symbol(p):
     'pn_add_symbol : '
     # Guardar el id y el tipo del simbolo encontrado
-    print("\npn_add_symbol")
+    #print("\npn_add_symbol")
     global symbols, current_type, current_function, set_var_global, set_var_main, set_var_function
     if (symbols[current_function].get(p[-1]) is None):
         if (current_function == 'global'):
@@ -451,15 +452,21 @@ def p_pn_add_symbol(p):
             'name': p[-1],
             'type': current_type
         }
-        print(p[-1])
+        #print(p[-1])
     else :
         print("Error: variable ya habia sido declarada")
 
+# Push constant name and type to the respective stacks when it is used
 def p_pn_push_constant_and_type(p):
     'pn_push_constant_and_type : '
-    print("\npush_constant_and_type")
-    stack_operands.append('ct')
+    global nextConst
+    #print("\npush_constant_and_type")
+    stack_operands.append('c' + str(nextConst))
     stack_types.append('int')
+    nextConst += 1
+    # To Do
+    # Agregar nombres a las constantes
+
     #global constants
     #cName = 'c'
     #print(cName)
@@ -471,12 +478,11 @@ def p_pn_push_constant_and_type(p):
     #stack_types.append(type(p[-1]))
     #nextConst += 1
 
-
-
-# Add variable name and type to the respective stacks
+# Push variable name and type to the respective stacks when it is used
 def p_pn_push_operand_and_type(p):
     'pn_push_operand_and_type : '
-    print("\npush_operand_and_type")
+    print(p[-1])
+    #print("\npush_operand_and_type")
     global symbols, current_function, stack_var_names, stack_var_types
     if(symbols[current_function]['vars'].get(p[-1]) is not None):
         stack_operands.append(symbols[current_function]['vars'].get(p[-1])['name'])
@@ -490,24 +496,23 @@ def p_pn_push_operand_and_type(p):
     else :
         print("Variable not defined")
         sys.exit()
-    print(p[-1])
+    #print(p[-1])
     print(stack_operands)
-    print(stack_operators)
+    #print(stack_operators)
 
 def p_pn_push_operator(p):
     'pn_push_operator : '
-    print("\npush_operator")
+    #print("\npush_operator")
     stack_operators.append(p[-1])
-    print(stack_operators)
 
 ## PN aritmetica
 
 def p_pn_addition_substraction(p):
     'pn_addition_substraction : '
-    print("\npn_addition_substraction")
+    #print("\npn_addition_substraction")
     global stack_operators, stack_operands, nextTemp
-    print(stack_operands)
-    print(stack_operators)
+    #print(stack_operands)
+    #print(stack_operators)
     if (len(stack_operators) > 0):
         if (stack_operators[-1] == '+' or stack_operators[-1] == '-'):
             right_operand = stack_operands.pop()
@@ -533,10 +538,10 @@ def p_pn_addition_substraction(p):
 
 def p_pn_multiplication_division(p):
     'pn_multiplication_division : '
-    print("\npn_multiplication_division")
+    #print("\npn_multiplication_division")
     global stack_operators, stack_operands, nextTemp
-    print(stack_operands)
-    print(stack_operators)
+    #print(stack_operands)
+    #print(stack_operators)
     if (len(stack_operators) > 0):
         if (stack_operators[-1] == '*' or stack_operators[-1] == '/'):
             right_operand = stack_operands.pop()
@@ -564,11 +569,11 @@ def p_pn_multiplication_division(p):
 
 def p_pn_assign(p):
     'pn_assign : '
-    print("\npn_assign")
+    #print("\npn_assign")
     global stack_operators, stack_operands, stack_types, nextTemp
-    print(stack_operands)
-    print(stack_types)
-    print(stack_operators)
+    #print(stack_operands)
+    #print(stack_types)
+    #print(stack_operators)
 
     if (len(stack_operators) > 0):
         if (stack_operators[-1] == '='):
@@ -592,7 +597,50 @@ def p_pn_assign(p):
                 # Hacer mas especifico este error
                 print("Error en asginacion")
                 sys.exit()
-    print("saliendo assign")
+
+# lectura
+def p_pn_push_read_operator(p):
+    'pn_push_read_operator : '
+    stack_operators.append('read')
+
+def p_pn_read(p):
+    'pn_read : '
+    if (len(stack_operators) > 0):
+        if (stack_operators[-1] == 'read'):
+            operand = stack_operands.pop()
+            type = stack_types.pop()
+            operator = stack_operators.pop()
+
+            quad = [operator,None,None,operand]
+            quadruples.append(quad)
+
+# escritura
+def p_pn_push_write_operator(p):
+    'pn_push_write_operator : '
+    stack_operators.append('write')
+
+def p_pn_write(p):
+    'pn_write : '
+    if (len(stack_operators) > 0):
+        if (stack_operators[-1] == 'write'):
+            print("entre write")
+            operand = stack_operands.pop()
+            type = stack_types.pop()
+            operator = stack_operators.pop()
+
+            quad = [operator,None,None,operand]
+            quadruples.append(quad)
+
+# decision
+
+
+# retorno
+
+# condicional (WHILE)
+# no_condicional (FOR)
+
+
+
 parser = yacc.yacc()
 
 if len(sys.argv) != 2:
@@ -624,33 +672,3 @@ try:
         #file.write(str(object_code))
 except:
     print("No se pudo compilar el programa")
-
-
-
-
-
-# Compila el programa.
-#with open(data, 'r', newline='\n') as file:
-#    parser.parse(file.read())
-#    object_code = {
-#        'symbols': symbols,
-#        'quadruples': quadruples,
-#        'constants': constants
-#    }
-#    with open(data + 'o', 'w') as file:
-#        file.write(str(object_code))
-
-
-
-
-
-#lexer.input(s)
-#for tok in lexer:
-#print(tok)
-
-#   if parser.parse(s,lexer = lexer) == "complete":
-#       print("El programa es valido")
-#   else:
-#       print("El programa es invalido")
-#except:
-#   print("El programa es invalido")

@@ -1,0 +1,16 @@
+program testAritmetica;
+
+var int : i, j; float : myFloat;
+
+void module miFuncion()
+{}
+
+main()
+var int : suma, fromRead;
+{
+  read(fromRead);
+  i = 20;
+  j = 10;
+  suma = i + j;
+  write(suma);
+}
