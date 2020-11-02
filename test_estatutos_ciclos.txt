@@ -1,0 +1,31 @@
+program testAritmetica;
+
+var int : i, j; float : myFloat;
+
+void module miFuncion()
+{}
+
+main()
+var int : suma, aquiSalgoFor, aquiSalgoWhile;
+{
+
+  for i = 1 to 3 do
+  {
+    write(i);
+  }
+
+  write(aquiSalgoFor);
+
+  suma = 0;
+
+  while(suma < 10) do {
+    suma = suma + 1;
+  }
+
+  write(aquiSalgoWhile);
+
+  if (suma > 10) then
+  {
+    write(suma);
+  }
+}

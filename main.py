@@ -262,7 +262,7 @@ def p_aux_escritura(p):
 
 
 def p_condicional(p):
-    'condicional : WHILE LPAREN expresion RPAREN DO bloque'
+    'condicional : WHILE pn_while_1 LPAREN expresion pn_while_2 RPAREN DO bloque pn_while_3'
 
 
 def p_bloque(p):
@@ -330,8 +330,8 @@ def p_aux_llamada(p):
 
 
 def p_no_condicional(p):
-    '''no_condicional : FOR ID pn_push_operand_and_type dimensiones ASSIGN pn_push_operator expresion TO expresion DO bloque
-                      | FOR ID pn_push_operand_and_type ASSIGN pn_push_operator expresion TO expresion DO bloque'''
+    '''no_condicional : FOR ID pn_push_operand_and_type dimensiones ASSIGN pn_push_operator expresion pn_assign TO expresion pn_for_push_comparison pn_comparison pn_for_go_false DO bloque pn_for_go_back
+                      | FOR ID pn_push_operand_and_type ASSIGN pn_push_operator expresion pn_assign TO expresion pn_for_push_comparison pn_comparison pn_for_go_false DO bloque pn_for_go_back'''
 
 
 def p_dimensiones(p):
@@ -479,16 +479,22 @@ def p_pn_push_operand_and_type(p):
     'pn_push_operand_and_type : '
     #print(p[-1])
     #print("\npush_operand_and_type")
-    global symbols, current_function, stack_var_names, stack_var_types
+    global symbols, current_function, stack_var_names, stack_var_types, current_type, current_var
     if(symbols[current_function]['vars'].get(p[-1]) is not None):
         stack_operands.append(symbols[current_function]['vars'].get(p[-1])['name'])
         stack_types.append(symbols[current_function]['vars'].get(p[-1])['type'])
+        current_var = symbols[current_function]['vars'].get(p[-1])['name']
+        current_type = symbols[current_function]['vars'].get(p[-1])['type']
     elif(symbols['global']['vars'].get(p[-1]) is not None):
         stack_operands.append(symbols['global']['vars'].get(p[-1])['name'])
         stack_types.append(symbols['global']['vars'].get(p[-1])['type'])
+        current_var = symbols['global']['vars'].get(p[-1])['name']
+        current_type = symbols['global']['vars'].get(p[-1])['type']
     elif(symbols[current_function]['params'].get(p[-1]) is not None):
         stack_operands.append(symbols[current_function]['params'].get(p[-1])['name'])
         stack_types.append(symbols[current_function]['params'].get(p[-1])['type'])
+        current_var = symbols[current_function]['params'].get(p[-1])['name']
+        current_type = symbols[current_function]['params'].get(p[-1])['type']
     else :
         print("Variable not defined")
         sys.exit()
@@ -611,6 +617,8 @@ def p_pn_read(p):
             quadruples.append(quad)
 
 # escritura
+# To Do
+# Escribir constantes de tipo string
 def p_pn_push_write_operator(p):
     'pn_push_write_operator : '
     stack_operators.append('write')
@@ -639,10 +647,10 @@ def p_pn_comparison(p):
             operator = stack_operators.pop()
 
             result_type = cuboSemantico.typeOperator[left_type][right_type][operator]
-            print(left_type)
-            print(right_type)
-            print(operator)
-            print(result_type)
+            #print(left_type)
+            #print(right_type)
+            #print(operator)
+            #print(result_type)
             if result_type is not None :
                 result = 't' + str(nextTemp)
                 quad = [operator,left_operand,right_operand,result]
@@ -658,9 +666,9 @@ def p_pn_comparison(p):
 
 def p_pn_if_1(p):
     'pn_if_1 : '
-    global stack_operands, stack_types, quadruples, stack_jumps
-    print(stack_operands)
-    print(stack_types)
+    global stack_operands, stack_types, quadruples, stack_jumps, quadruples
+    #print(stack_operands)
+    #print(stack_types)
     result = stack_operands.pop()
     result_type = stack_types.pop()
     if (result_type == 'bool'):
@@ -687,12 +695,88 @@ def p_pn_else(p):
     stack_jumps.append(len(quadruples)-1)
     fill(endOfElse,len(quadruples))
 
-
-# retorno
-
 # condicional (WHILE)
+def p_pn_while_1(p):
+    'pn_while_1 : '
+    print('pn_while_1')
+    stack_jumps.append(len(quadruples))
+
+def p_pn_while_2(p):
+    'pn_while_2 : '
+    print('pn_while_1')
+    result = stack_operands.pop()
+    result_type = stack_types.pop()
+    if (result_type == 'bool'):
+        quad = ['GOTOF',result,None,'.pending_jump']
+        quadruples.append(quad)
+        stack_jumps.append(len(quadruples)-1)
+    else:
+        # To Do
+        # Hacer mas especifico este error
+        print("La expresion no es de tipo bool en while")
+        sys.exit()
+
+def p_pn_while_3(p):
+    'pn_while_3 : '
+    print('pn_while_3')
+    global stack_jumps, quadruples
+    endOfWhile = stack_jumps.pop()
+
+    whileComparison = stack_jumps.pop()
+    quad = ['GOTO',None,None,whileComparison]
+    quadruples.append(quad)
+
+    fill(endOfWhile,len(quadruples))
+    print('saliendo 3')
+
 # no_condicional (FOR)
 
+def p_pn_for_push_comparison(p):
+    'pn_for_push_comparison : '
+    #print("pn_for_push_comparison")
+    global stack_operands, stack_types, quadruples, stack_jumps, quadruples
+
+    stack_operands.append(current_var)
+    stack_types.append(current_type)
+    stack_operators.append('==')
+
+def p_pn_for_go_false(p):
+    'pn_for_go_false : '
+    #print('pn_for_go_false')
+    global stack_operands, stack_types, quadruples, stack_jumps, quadruples
+    stack_jumps.append(len(quadruples)-1)
+
+    result = stack_operands.pop()
+    result_type = stack_types.pop()
+    if (result_type == 'bool'):
+        quad = ['GOTOF',result,None,'.pending_jump']
+        quadruples.append(quad)
+        stack_jumps.append(len(quadruples)-1)
+
+    else:
+        # To Do
+        # Hacer mas especifico este error
+        print("La expresion no es de tipo bool en el for (probablemente no son enteros)")
+        sys.exit()
+
+def p_pn_for_go_back(p):
+    'pn_for_go_back : '
+    #print('pn_for_go_back')
+    global stack_jumps, quadruples
+
+    forOnFalse = stack_jumps.pop()
+
+    forComparison = stack_jumps.pop()
+    quad = ['GOTO',None,None,forComparison]
+    quadruples.append(quad)
+
+    fill(forOnFalse,len(quadruples))
+
+
+
+# Funciones
+
+# retorno
 
 
 # Auxiliary functions
