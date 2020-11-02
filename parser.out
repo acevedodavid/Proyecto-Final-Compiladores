@@ -60,8 +60,8 @@ Rule 54    letrero -> QUOTATION aux_letrero QUOTATION
 Rule 55    letrero -> QUOTATION QUOTATION
 Rule 56    aux_letrero -> CTE_CHAR
 Rule 57    aux_letrero -> CTE_CHAR aux_letrero
-Rule 58    decision -> IF LPAREN expresion RPAREN THEN bloque
-Rule 59    decision -> IF LPAREN expresion RPAREN THEN bloque ELSE bloque
+Rule 58    decision -> IF LPAREN expresion pn_if_1 RPAREN THEN bloque pn_if_2
+Rule 59    decision -> IF LPAREN expresion pn_if_1 RPAREN THEN bloque ELSE pn_else bloque pn_if_2
 Rule 60    llamada -> ID LPAREN aux_llamada RPAREN SEMICOLON
 Rule 61    aux_llamada -> expresion
 Rule 62    aux_llamada -> expresion COMMA aux_llamada
@@ -76,12 +76,12 @@ Rule 70    aux_expresion -> AND comparacion
 Rule 71    aux_expresion -> OR comparacion
 Rule 72    aux_expresion -> AND comparacion aux_expresion
 Rule 73    aux_expresion -> OR comparacion aux_expresion
-Rule 74    comparacion -> exp LESSTHAN exp
-Rule 75    comparacion -> exp GREATERTHAN exp
-Rule 76    comparacion -> exp EQUAL exp
-Rule 77    aux_comparacion -> exp LESSTHAN exp
-Rule 78    aux_comparacion -> exp GREATERTHAN exp
-Rule 79    aux_comparacion -> exp EQUAL exp
+Rule 74    comparacion -> exp LESSTHAN pn_push_operator exp pn_comparison
+Rule 75    comparacion -> exp GREATERTHAN pn_push_operator exp pn_comparison
+Rule 76    comparacion -> exp EQUAL pn_push_operator exp pn_comparison
+Rule 77    aux_comparacion -> exp LESSTHAN pn_push_operator exp pn_comparison
+Rule 78    aux_comparacion -> exp GREATERTHAN pn_push_operator exp pn_comparison
+Rule 79    aux_comparacion -> exp EQUAL pn_push_operator exp pn_comparison
 Rule 80    aux_comparacion -> exp
 Rule 81    exp -> termino pn_addition_substraction
 Rule 82    exp -> termino pn_addition_substraction PLUS pn_push_operator exp
@@ -112,6 +112,10 @@ Rule 106   pn_push_read_operator -> <empty>
 Rule 107   pn_read -> <empty>
 Rule 108   pn_push_write_operator -> <empty>
 Rule 109   pn_write -> <empty>
+Rule 110   pn_comparison -> <empty>
+Rule 111   pn_if_1 -> <empty>
+Rule 112   pn_if_2 -> <empty>
+Rule 113   pn_else -> <empty>
 
 Terminals, with rules where they appear
 
@@ -193,12 +197,16 @@ parametros           : 9 10 22
 pn_add_symbol        : 26 27 28
 pn_addition_substraction : 81 82 83
 pn_assign            : 46 47
+pn_comparison        : 74 75 76 77 78 79
 pn_current_function  : 5 6 9 10 11 12
 pn_current_type      : 17 18 19 20
+pn_else              : 59
+pn_if_1              : 58 59
+pn_if_2              : 58 59
 pn_multiplication_division : 84 85 86
 pn_push_constant_and_type : 95 96
 pn_push_operand_and_type : 46 47 50 51 52 53 63 64 94
-pn_push_operator     : 46 47 63 64 82 83 85 86
+pn_push_operator     : 46 47 63 64 74 75 76 77 78 79 82 83 85 86
 pn_push_read_operator : 50 51 52 53
 pn_push_write_operator : 30 31 32 33
 pn_read              : 50 51 52 53
@@ -742,8 +750,8 @@ state 44
     (29) escritura -> . WRITE LPAREN aux_escritura RPAREN SEMICOLON
     (48) retorno -> . RETURN LPAREN expresion RPAREN
     (49) lectura -> . READ LPAREN aux_lectura RPAREN SEMICOLON
-    (58) decision -> . IF LPAREN expresion RPAREN THEN bloque
-    (59) decision -> . IF LPAREN expresion RPAREN THEN bloque ELSE bloque
+    (58) decision -> . IF LPAREN expresion pn_if_1 RPAREN THEN bloque pn_if_2
+    (59) decision -> . IF LPAREN expresion pn_if_1 RPAREN THEN bloque ELSE pn_else bloque pn_if_2
     (63) no_condicional -> . FOR ID pn_push_operand_and_type dimensiones ASSIGN pn_push_operator expresion TO expresion DO bloque
     (64) no_condicional -> . FOR ID pn_push_operand_and_type ASSIGN pn_push_operator expresion TO expresion DO bloque
 
@@ -867,8 +875,8 @@ state 52
     (29) escritura -> . WRITE LPAREN aux_escritura RPAREN SEMICOLON
     (48) retorno -> . RETURN LPAREN expresion RPAREN
     (49) lectura -> . READ LPAREN aux_lectura RPAREN SEMICOLON
-    (58) decision -> . IF LPAREN expresion RPAREN THEN bloque
-    (59) decision -> . IF LPAREN expresion RPAREN THEN bloque ELSE bloque
+    (58) decision -> . IF LPAREN expresion pn_if_1 RPAREN THEN bloque pn_if_2
+    (59) decision -> . IF LPAREN expresion pn_if_1 RPAREN THEN bloque ELSE pn_else bloque pn_if_2
     (63) no_condicional -> . FOR ID pn_push_operand_and_type dimensiones ASSIGN pn_push_operator expresion TO expresion DO bloque
     (64) no_condicional -> . FOR ID pn_push_operand_and_type ASSIGN pn_push_operator expresion TO expresion DO bloque
 
@@ -1030,8 +1038,8 @@ state 64
 
 state 65
 
-    (58) decision -> IF . LPAREN expresion RPAREN THEN bloque
-    (59) decision -> IF . LPAREN expresion RPAREN THEN bloque ELSE bloque
+    (58) decision -> IF . LPAREN expresion pn_if_1 RPAREN THEN bloque pn_if_2
+    (59) decision -> IF . LPAREN expresion pn_if_1 RPAREN THEN bloque ELSE pn_else bloque pn_if_2
 
     LPAREN          shift and go to state 78
 
@@ -1128,12 +1136,12 @@ state 74
     (34) condicional -> WHILE LPAREN . expresion RPAREN DO bloque
     (68) expresion -> . comparacion aux_expresion
     (69) expresion -> . aux_comparacion
-    (74) comparacion -> . exp LESSTHAN exp
-    (75) comparacion -> . exp GREATERTHAN exp
-    (76) comparacion -> . exp EQUAL exp
-    (77) aux_comparacion -> . exp LESSTHAN exp
-    (78) aux_comparacion -> . exp GREATERTHAN exp
-    (79) aux_comparacion -> . exp EQUAL exp
+    (74) comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (75) comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (76) comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
+    (77) aux_comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (78) aux_comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (79) aux_comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
     (80) aux_comparacion -> . exp
     (81) exp -> . termino pn_addition_substraction
     (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
@@ -1194,12 +1202,12 @@ state 76
     (48) retorno -> RETURN LPAREN . expresion RPAREN
     (68) expresion -> . comparacion aux_expresion
     (69) expresion -> . aux_comparacion
-    (74) comparacion -> . exp LESSTHAN exp
-    (75) comparacion -> . exp GREATERTHAN exp
-    (76) comparacion -> . exp EQUAL exp
-    (77) aux_comparacion -> . exp LESSTHAN exp
-    (78) aux_comparacion -> . exp GREATERTHAN exp
-    (79) aux_comparacion -> . exp EQUAL exp
+    (74) comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (75) comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (76) comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
+    (77) aux_comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (78) aux_comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (79) aux_comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
     (80) aux_comparacion -> . exp
     (81) exp -> . termino pn_addition_substraction
     (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
@@ -1251,16 +1259,16 @@ state 77
 
 state 78
 
-    (58) decision -> IF LPAREN . expresion RPAREN THEN bloque
-    (59) decision -> IF LPAREN . expresion RPAREN THEN bloque ELSE bloque
+    (58) decision -> IF LPAREN . expresion pn_if_1 RPAREN THEN bloque pn_if_2
+    (59) decision -> IF LPAREN . expresion pn_if_1 RPAREN THEN bloque ELSE pn_else bloque pn_if_2
     (68) expresion -> . comparacion aux_expresion
     (69) expresion -> . aux_comparacion
-    (74) comparacion -> . exp LESSTHAN exp
-    (75) comparacion -> . exp GREATERTHAN exp
-    (76) comparacion -> . exp EQUAL exp
-    (77) aux_comparacion -> . exp LESSTHAN exp
-    (78) aux_comparacion -> . exp GREATERTHAN exp
-    (79) aux_comparacion -> . exp EQUAL exp
+    (74) comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (75) comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (76) comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
+    (77) aux_comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (78) aux_comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (79) aux_comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
     (80) aux_comparacion -> . exp
     (81) exp -> . termino pn_addition_substraction
     (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
@@ -1389,12 +1397,12 @@ state 87
     (67) dimensiones -> LSQUARE . expresion RSQUARE
     (68) expresion -> . comparacion aux_expresion
     (69) expresion -> . aux_comparacion
-    (74) comparacion -> . exp LESSTHAN exp
-    (75) comparacion -> . exp GREATERTHAN exp
-    (76) comparacion -> . exp EQUAL exp
-    (77) aux_comparacion -> . exp LESSTHAN exp
-    (78) aux_comparacion -> . exp GREATERTHAN exp
-    (79) aux_comparacion -> . exp EQUAL exp
+    (74) comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (75) comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (76) comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
+    (77) aux_comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (78) aux_comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (79) aux_comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
     (80) aux_comparacion -> . exp
     (81) exp -> . termino pn_addition_substraction
     (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
@@ -1435,12 +1443,12 @@ state 88
     (87) factor -> LPAREN . expresion RPAREN
     (68) expresion -> . comparacion aux_expresion
     (69) expresion -> . aux_comparacion
-    (74) comparacion -> . exp LESSTHAN exp
-    (75) comparacion -> . exp GREATERTHAN exp
-    (76) comparacion -> . exp EQUAL exp
-    (77) aux_comparacion -> . exp LESSTHAN exp
-    (78) aux_comparacion -> . exp GREATERTHAN exp
-    (79) aux_comparacion -> . exp EQUAL exp
+    (74) comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (75) comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (76) comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
+    (77) aux_comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (78) aux_comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (79) aux_comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
     (80) aux_comparacion -> . exp
     (81) exp -> . termino pn_addition_substraction
     (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
@@ -1510,12 +1518,12 @@ state 91
 
 state 92
 
-    (74) comparacion -> exp . LESSTHAN exp
-    (75) comparacion -> exp . GREATERTHAN exp
-    (76) comparacion -> exp . EQUAL exp
-    (77) aux_comparacion -> exp . LESSTHAN exp
-    (78) aux_comparacion -> exp . GREATERTHAN exp
-    (79) aux_comparacion -> exp . EQUAL exp
+    (74) comparacion -> exp . LESSTHAN pn_push_operator exp pn_comparison
+    (75) comparacion -> exp . GREATERTHAN pn_push_operator exp pn_comparison
+    (76) comparacion -> exp . EQUAL pn_push_operator exp pn_comparison
+    (77) aux_comparacion -> exp . LESSTHAN pn_push_operator exp pn_comparison
+    (78) aux_comparacion -> exp . GREATERTHAN pn_push_operator exp pn_comparison
+    (79) aux_comparacion -> exp . EQUAL pn_push_operator exp pn_comparison
     (80) aux_comparacion -> exp .
 
     LESSTHAN        shift and go to state 122
@@ -1739,12 +1747,12 @@ state 103
     (55) letrero -> . QUOTATION QUOTATION
     (68) expresion -> . comparacion aux_expresion
     (69) expresion -> . aux_comparacion
-    (74) comparacion -> . exp LESSTHAN exp
-    (75) comparacion -> . exp GREATERTHAN exp
-    (76) comparacion -> . exp EQUAL exp
-    (77) aux_comparacion -> . exp LESSTHAN exp
-    (78) aux_comparacion -> . exp GREATERTHAN exp
-    (79) aux_comparacion -> . exp EQUAL exp
+    (74) comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (75) comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (76) comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
+    (77) aux_comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (78) aux_comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (79) aux_comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
     (80) aux_comparacion -> . exp
     (81) exp -> . termino pn_addition_substraction
     (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
@@ -1808,11 +1816,13 @@ state 106
 
 state 107
 
-    (58) decision -> IF LPAREN expresion . RPAREN THEN bloque
-    (59) decision -> IF LPAREN expresion . RPAREN THEN bloque ELSE bloque
+    (58) decision -> IF LPAREN expresion . pn_if_1 RPAREN THEN bloque pn_if_2
+    (59) decision -> IF LPAREN expresion . pn_if_1 RPAREN THEN bloque ELSE pn_else bloque pn_if_2
+    (111) pn_if_1 -> .
 
-    RPAREN          shift and go to state 142
+    RPAREN          reduce using rule 111 (pn_if_1 -> .)
 
+    pn_if_1                        shift and go to state 142
 
 state 108
 
@@ -1901,12 +1911,12 @@ state 115
     (47) asignacion -> ID pn_push_operand_and_type ASSIGN pn_push_operator . expresion pn_assign SEMICOLON
     (68) expresion -> . comparacion aux_expresion
     (69) expresion -> . aux_comparacion
-    (74) comparacion -> . exp LESSTHAN exp
-    (75) comparacion -> . exp GREATERTHAN exp
-    (76) comparacion -> . exp EQUAL exp
-    (77) aux_comparacion -> . exp LESSTHAN exp
-    (78) aux_comparacion -> . exp GREATERTHAN exp
-    (79) aux_comparacion -> . exp EQUAL exp
+    (74) comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (75) comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (76) comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
+    (77) aux_comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (78) aux_comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (79) aux_comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
     (80) aux_comparacion -> . exp
     (81) exp -> . termino pn_addition_substraction
     (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
@@ -1982,9 +1992,9 @@ state 120
 
     (70) aux_expresion -> AND . comparacion
     (72) aux_expresion -> AND . comparacion aux_expresion
-    (74) comparacion -> . exp LESSTHAN exp
-    (75) comparacion -> . exp GREATERTHAN exp
-    (76) comparacion -> . exp EQUAL exp
+    (74) comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (75) comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (76) comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
     (81) exp -> . termino pn_addition_substraction
     (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
     (83) exp -> . termino pn_addition_substraction MINUS pn_push_operator exp
@@ -2021,9 +2031,9 @@ state 121
 
     (71) aux_expresion -> OR . comparacion
     (73) aux_expresion -> OR . comparacion aux_expresion
-    (74) comparacion -> . exp LESSTHAN exp
-    (75) comparacion -> . exp GREATERTHAN exp
-    (76) comparacion -> . exp EQUAL exp
+    (74) comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (75) comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (76) comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
     (81) exp -> . termino pn_addition_substraction
     (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
     (83) exp -> . termino pn_addition_substraction MINUS pn_push_operator exp
@@ -2058,108 +2068,48 @@ state 121
 
 state 122
 
-    (74) comparacion -> exp LESSTHAN . exp
-    (77) aux_comparacion -> exp LESSTHAN . exp
-    (81) exp -> . termino pn_addition_substraction
-    (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
-    (83) exp -> . termino pn_addition_substraction MINUS pn_push_operator exp
-    (84) termino -> . factor pn_multiplication_division
-    (85) termino -> . factor pn_multiplication_division MULT pn_push_operator termino
-    (86) termino -> . factor pn_multiplication_division DIV pn_push_operator termino
-    (87) factor -> . LPAREN expresion RPAREN
-    (88) factor -> . PLUS var_cte
-    (89) factor -> . PLUS llamada
-    (90) factor -> . MINUS var_cte
-    (91) factor -> . MINUS llamada
-    (92) factor -> . var_cte
-    (93) factor -> . llamada
-    (94) var_cte -> . ID pn_push_operand_and_type
-    (95) var_cte -> . CTE_INT pn_push_constant_and_type
-    (96) var_cte -> . CTE_FLOAT pn_push_constant_and_type
-    (60) llamada -> . ID LPAREN aux_llamada RPAREN SEMICOLON
+    (74) comparacion -> exp LESSTHAN . pn_push_operator exp pn_comparison
+    (77) aux_comparacion -> exp LESSTHAN . pn_push_operator exp pn_comparison
+    (102) pn_push_operator -> .
 
-    LPAREN          shift and go to state 88
-    PLUS            shift and go to state 94
-    MINUS           shift and go to state 95
-    ID              shift and go to state 99
-    CTE_INT         shift and go to state 100
-    CTE_FLOAT       shift and go to state 101
+    LPAREN          reduce using rule 102 (pn_push_operator -> .)
+    PLUS            reduce using rule 102 (pn_push_operator -> .)
+    MINUS           reduce using rule 102 (pn_push_operator -> .)
+    ID              reduce using rule 102 (pn_push_operator -> .)
+    CTE_INT         reduce using rule 102 (pn_push_operator -> .)
+    CTE_FLOAT       reduce using rule 102 (pn_push_operator -> .)
 
-    exp                            shift and go to state 157
-    termino                        shift and go to state 93
-    factor                         shift and go to state 96
-    var_cte                        shift and go to state 97
-    llamada                        shift and go to state 98
+    pn_push_operator               shift and go to state 157
 
 state 123
 
-    (75) comparacion -> exp GREATERTHAN . exp
-    (78) aux_comparacion -> exp GREATERTHAN . exp
-    (81) exp -> . termino pn_addition_substraction
-    (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
-    (83) exp -> . termino pn_addition_substraction MINUS pn_push_operator exp
-    (84) termino -> . factor pn_multiplication_division
-    (85) termino -> . factor pn_multiplication_division MULT pn_push_operator termino
-    (86) termino -> . factor pn_multiplication_division DIV pn_push_operator termino
-    (87) factor -> . LPAREN expresion RPAREN
-    (88) factor -> . PLUS var_cte
-    (89) factor -> . PLUS llamada
-    (90) factor -> . MINUS var_cte
-    (91) factor -> . MINUS llamada
-    (92) factor -> . var_cte
-    (93) factor -> . llamada
-    (94) var_cte -> . ID pn_push_operand_and_type
-    (95) var_cte -> . CTE_INT pn_push_constant_and_type
-    (96) var_cte -> . CTE_FLOAT pn_push_constant_and_type
-    (60) llamada -> . ID LPAREN aux_llamada RPAREN SEMICOLON
+    (75) comparacion -> exp GREATERTHAN . pn_push_operator exp pn_comparison
+    (78) aux_comparacion -> exp GREATERTHAN . pn_push_operator exp pn_comparison
+    (102) pn_push_operator -> .
 
-    LPAREN          shift and go to state 88
-    PLUS            shift and go to state 94
-    MINUS           shift and go to state 95
-    ID              shift and go to state 99
-    CTE_INT         shift and go to state 100
-    CTE_FLOAT       shift and go to state 101
+    LPAREN          reduce using rule 102 (pn_push_operator -> .)
+    PLUS            reduce using rule 102 (pn_push_operator -> .)
+    MINUS           reduce using rule 102 (pn_push_operator -> .)
+    ID              reduce using rule 102 (pn_push_operator -> .)
+    CTE_INT         reduce using rule 102 (pn_push_operator -> .)
+    CTE_FLOAT       reduce using rule 102 (pn_push_operator -> .)
 
-    exp                            shift and go to state 158
-    termino                        shift and go to state 93
-    factor                         shift and go to state 96
-    var_cte                        shift and go to state 97
-    llamada                        shift and go to state 98
+    pn_push_operator               shift and go to state 158
 
 state 124
 
-    (76) comparacion -> exp EQUAL . exp
-    (79) aux_comparacion -> exp EQUAL . exp
-    (81) exp -> . termino pn_addition_substraction
-    (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
-    (83) exp -> . termino pn_addition_substraction MINUS pn_push_operator exp
-    (84) termino -> . factor pn_multiplication_division
-    (85) termino -> . factor pn_multiplication_division MULT pn_push_operator termino
-    (86) termino -> . factor pn_multiplication_division DIV pn_push_operator termino
-    (87) factor -> . LPAREN expresion RPAREN
-    (88) factor -> . PLUS var_cte
-    (89) factor -> . PLUS llamada
-    (90) factor -> . MINUS var_cte
-    (91) factor -> . MINUS llamada
-    (92) factor -> . var_cte
-    (93) factor -> . llamada
-    (94) var_cte -> . ID pn_push_operand_and_type
-    (95) var_cte -> . CTE_INT pn_push_constant_and_type
-    (96) var_cte -> . CTE_FLOAT pn_push_constant_and_type
-    (60) llamada -> . ID LPAREN aux_llamada RPAREN SEMICOLON
+    (76) comparacion -> exp EQUAL . pn_push_operator exp pn_comparison
+    (79) aux_comparacion -> exp EQUAL . pn_push_operator exp pn_comparison
+    (102) pn_push_operator -> .
 
-    LPAREN          shift and go to state 88
-    PLUS            shift and go to state 94
-    MINUS           shift and go to state 95
-    ID              shift and go to state 99
-    CTE_INT         shift and go to state 100
-    CTE_FLOAT       shift and go to state 101
+    LPAREN          reduce using rule 102 (pn_push_operator -> .)
+    PLUS            reduce using rule 102 (pn_push_operator -> .)
+    MINUS           reduce using rule 102 (pn_push_operator -> .)
+    ID              reduce using rule 102 (pn_push_operator -> .)
+    CTE_INT         reduce using rule 102 (pn_push_operator -> .)
+    CTE_FLOAT       reduce using rule 102 (pn_push_operator -> .)
 
-    exp                            shift and go to state 159
-    termino                        shift and go to state 93
-    factor                         shift and go to state 96
-    var_cte                        shift and go to state 97
-    llamada                        shift and go to state 98
+    pn_push_operator               shift and go to state 159
 
 state 125
 
@@ -2317,12 +2267,12 @@ state 132
     (62) aux_llamada -> . expresion COMMA aux_llamada
     (68) expresion -> . comparacion aux_expresion
     (69) expresion -> . aux_comparacion
-    (74) comparacion -> . exp LESSTHAN exp
-    (75) comparacion -> . exp GREATERTHAN exp
-    (76) comparacion -> . exp EQUAL exp
-    (77) aux_comparacion -> . exp LESSTHAN exp
-    (78) aux_comparacion -> . exp GREATERTHAN exp
-    (79) aux_comparacion -> . exp EQUAL exp
+    (74) comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (75) comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (76) comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
+    (77) aux_comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (78) aux_comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (79) aux_comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
     (80) aux_comparacion -> . exp
     (81) exp -> . termino pn_addition_substraction
     (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
@@ -2479,10 +2429,10 @@ state 141
 
 state 142
 
-    (58) decision -> IF LPAREN expresion RPAREN . THEN bloque
-    (59) decision -> IF LPAREN expresion RPAREN . THEN bloque ELSE bloque
+    (58) decision -> IF LPAREN expresion pn_if_1 . RPAREN THEN bloque pn_if_2
+    (59) decision -> IF LPAREN expresion pn_if_1 . RPAREN THEN bloque ELSE pn_else bloque pn_if_2
 
-    THEN            shift and go to state 174
+    RPAREN          shift and go to state 174
 
 
 state 143
@@ -2536,12 +2486,12 @@ state 148
     (46) asignacion -> ID pn_push_operand_and_type dimensiones ASSIGN pn_push_operator . expresion pn_assign SEMICOLON
     (68) expresion -> . comparacion aux_expresion
     (69) expresion -> . aux_comparacion
-    (74) comparacion -> . exp LESSTHAN exp
-    (75) comparacion -> . exp GREATERTHAN exp
-    (76) comparacion -> . exp EQUAL exp
-    (77) aux_comparacion -> . exp LESSTHAN exp
-    (78) aux_comparacion -> . exp GREATERTHAN exp
-    (79) aux_comparacion -> . exp EQUAL exp
+    (74) comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (75) comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (76) comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
+    (77) aux_comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (78) aux_comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (79) aux_comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
     (80) aux_comparacion -> . exp
     (81) exp -> . termino pn_addition_substraction
     (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
@@ -2602,12 +2552,12 @@ state 151
     (66) dimensiones -> LSQUARE expresion COMMA . expresion RSQUARE
     (68) expresion -> . comparacion aux_expresion
     (69) expresion -> . aux_comparacion
-    (74) comparacion -> . exp LESSTHAN exp
-    (75) comparacion -> . exp GREATERTHAN exp
-    (76) comparacion -> . exp EQUAL exp
-    (77) aux_comparacion -> . exp LESSTHAN exp
-    (78) aux_comparacion -> . exp GREATERTHAN exp
-    (79) aux_comparacion -> . exp EQUAL exp
+    (74) comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (75) comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (76) comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
+    (77) aux_comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (78) aux_comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (79) aux_comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
     (80) aux_comparacion -> . exp
     (81) exp -> . termino pn_addition_substraction
     (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
@@ -2696,9 +2646,9 @@ state 154
 
 state 155
 
-    (74) comparacion -> exp . LESSTHAN exp
-    (75) comparacion -> exp . GREATERTHAN exp
-    (76) comparacion -> exp . EQUAL exp
+    (74) comparacion -> exp . LESSTHAN pn_push_operator exp pn_comparison
+    (75) comparacion -> exp . GREATERTHAN pn_push_operator exp pn_comparison
+    (76) comparacion -> exp . EQUAL pn_push_operator exp pn_comparison
 
     LESSTHAN        shift and go to state 184
     GREATERTHAN     shift and go to state 185
@@ -2727,48 +2677,108 @@ state 156
 
 state 157
 
-    (74) comparacion -> exp LESSTHAN exp .
-    (77) aux_comparacion -> exp LESSTHAN exp .
+    (74) comparacion -> exp LESSTHAN pn_push_operator . exp pn_comparison
+    (77) aux_comparacion -> exp LESSTHAN pn_push_operator . exp pn_comparison
+    (81) exp -> . termino pn_addition_substraction
+    (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
+    (83) exp -> . termino pn_addition_substraction MINUS pn_push_operator exp
+    (84) termino -> . factor pn_multiplication_division
+    (85) termino -> . factor pn_multiplication_division MULT pn_push_operator termino
+    (86) termino -> . factor pn_multiplication_division DIV pn_push_operator termino
+    (87) factor -> . LPAREN expresion RPAREN
+    (88) factor -> . PLUS var_cte
+    (89) factor -> . PLUS llamada
+    (90) factor -> . MINUS var_cte
+    (91) factor -> . MINUS llamada
+    (92) factor -> . var_cte
+    (93) factor -> . llamada
+    (94) var_cte -> . ID pn_push_operand_and_type
+    (95) var_cte -> . CTE_INT pn_push_constant_and_type
+    (96) var_cte -> . CTE_FLOAT pn_push_constant_and_type
+    (60) llamada -> . ID LPAREN aux_llamada RPAREN SEMICOLON
 
-    AND             reduce using rule 74 (comparacion -> exp LESSTHAN exp .)
-    OR              reduce using rule 74 (comparacion -> exp LESSTHAN exp .)
-    RPAREN          reduce using rule 77 (aux_comparacion -> exp LESSTHAN exp .)
-    RSQUARE         reduce using rule 77 (aux_comparacion -> exp LESSTHAN exp .)
-    COMMA           reduce using rule 77 (aux_comparacion -> exp LESSTHAN exp .)
-    SEMICOLON       reduce using rule 77 (aux_comparacion -> exp LESSTHAN exp .)
-    TO              reduce using rule 77 (aux_comparacion -> exp LESSTHAN exp .)
-    DO              reduce using rule 77 (aux_comparacion -> exp LESSTHAN exp .)
+    LPAREN          shift and go to state 88
+    PLUS            shift and go to state 94
+    MINUS           shift and go to state 95
+    ID              shift and go to state 99
+    CTE_INT         shift and go to state 100
+    CTE_FLOAT       shift and go to state 101
 
+    exp                            shift and go to state 188
+    termino                        shift and go to state 93
+    factor                         shift and go to state 96
+    var_cte                        shift and go to state 97
+    llamada                        shift and go to state 98
 
 state 158
 
-    (75) comparacion -> exp GREATERTHAN exp .
-    (78) aux_comparacion -> exp GREATERTHAN exp .
+    (75) comparacion -> exp GREATERTHAN pn_push_operator . exp pn_comparison
+    (78) aux_comparacion -> exp GREATERTHAN pn_push_operator . exp pn_comparison
+    (81) exp -> . termino pn_addition_substraction
+    (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
+    (83) exp -> . termino pn_addition_substraction MINUS pn_push_operator exp
+    (84) termino -> . factor pn_multiplication_division
+    (85) termino -> . factor pn_multiplication_division MULT pn_push_operator termino
+    (86) termino -> . factor pn_multiplication_division DIV pn_push_operator termino
+    (87) factor -> . LPAREN expresion RPAREN
+    (88) factor -> . PLUS var_cte
+    (89) factor -> . PLUS llamada
+    (90) factor -> . MINUS var_cte
+    (91) factor -> . MINUS llamada
+    (92) factor -> . var_cte
+    (93) factor -> . llamada
+    (94) var_cte -> . ID pn_push_operand_and_type
+    (95) var_cte -> . CTE_INT pn_push_constant_and_type
+    (96) var_cte -> . CTE_FLOAT pn_push_constant_and_type
+    (60) llamada -> . ID LPAREN aux_llamada RPAREN SEMICOLON
 
-    AND             reduce using rule 75 (comparacion -> exp GREATERTHAN exp .)
-    OR              reduce using rule 75 (comparacion -> exp GREATERTHAN exp .)
-    RPAREN          reduce using rule 78 (aux_comparacion -> exp GREATERTHAN exp .)
-    RSQUARE         reduce using rule 78 (aux_comparacion -> exp GREATERTHAN exp .)
-    COMMA           reduce using rule 78 (aux_comparacion -> exp GREATERTHAN exp .)
-    SEMICOLON       reduce using rule 78 (aux_comparacion -> exp GREATERTHAN exp .)
-    TO              reduce using rule 78 (aux_comparacion -> exp GREATERTHAN exp .)
-    DO              reduce using rule 78 (aux_comparacion -> exp GREATERTHAN exp .)
+    LPAREN          shift and go to state 88
+    PLUS            shift and go to state 94
+    MINUS           shift and go to state 95
+    ID              shift and go to state 99
+    CTE_INT         shift and go to state 100
+    CTE_FLOAT       shift and go to state 101
 
+    exp                            shift and go to state 189
+    termino                        shift and go to state 93
+    factor                         shift and go to state 96
+    var_cte                        shift and go to state 97
+    llamada                        shift and go to state 98
 
 state 159
 
-    (76) comparacion -> exp EQUAL exp .
-    (79) aux_comparacion -> exp EQUAL exp .
+    (76) comparacion -> exp EQUAL pn_push_operator . exp pn_comparison
+    (79) aux_comparacion -> exp EQUAL pn_push_operator . exp pn_comparison
+    (81) exp -> . termino pn_addition_substraction
+    (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
+    (83) exp -> . termino pn_addition_substraction MINUS pn_push_operator exp
+    (84) termino -> . factor pn_multiplication_division
+    (85) termino -> . factor pn_multiplication_division MULT pn_push_operator termino
+    (86) termino -> . factor pn_multiplication_division DIV pn_push_operator termino
+    (87) factor -> . LPAREN expresion RPAREN
+    (88) factor -> . PLUS var_cte
+    (89) factor -> . PLUS llamada
+    (90) factor -> . MINUS var_cte
+    (91) factor -> . MINUS llamada
+    (92) factor -> . var_cte
+    (93) factor -> . llamada
+    (94) var_cte -> . ID pn_push_operand_and_type
+    (95) var_cte -> . CTE_INT pn_push_constant_and_type
+    (96) var_cte -> . CTE_FLOAT pn_push_constant_and_type
+    (60) llamada -> . ID LPAREN aux_llamada RPAREN SEMICOLON
 
-    AND             reduce using rule 76 (comparacion -> exp EQUAL exp .)
-    OR              reduce using rule 76 (comparacion -> exp EQUAL exp .)
-    RPAREN          reduce using rule 79 (aux_comparacion -> exp EQUAL exp .)
-    RSQUARE         reduce using rule 79 (aux_comparacion -> exp EQUAL exp .)
-    COMMA           reduce using rule 79 (aux_comparacion -> exp EQUAL exp .)
-    SEMICOLON       reduce using rule 79 (aux_comparacion -> exp EQUAL exp .)
-    TO              reduce using rule 79 (aux_comparacion -> exp EQUAL exp .)
-    DO              reduce using rule 79 (aux_comparacion -> exp EQUAL exp .)
+    LPAREN          shift and go to state 88
+    PLUS            shift and go to state 94
+    MINUS           shift and go to state 95
+    ID              shift and go to state 99
+    CTE_INT         shift and go to state 100
+    CTE_FLOAT       shift and go to state 101
 
+    exp                            shift and go to state 190
+    termino                        shift and go to state 93
+    factor                         shift and go to state 96
+    var_cte                        shift and go to state 97
+    llamada                        shift and go to state 98
 
 state 160
 
@@ -2782,7 +2792,7 @@ state 160
     CTE_INT         reduce using rule 102 (pn_push_operator -> .)
     CTE_FLOAT       reduce using rule 102 (pn_push_operator -> .)
 
-    pn_push_operator               shift and go to state 188
+    pn_push_operator               shift and go to state 191
 
 state 161
 
@@ -2796,7 +2806,7 @@ state 161
     CTE_INT         reduce using rule 102 (pn_push_operator -> .)
     CTE_FLOAT       reduce using rule 102 (pn_push_operator -> .)
 
-    pn_push_operator               shift and go to state 189
+    pn_push_operator               shift and go to state 192
 
 state 162
 
@@ -2810,7 +2820,7 @@ state 162
     CTE_INT         reduce using rule 102 (pn_push_operator -> .)
     CTE_FLOAT       reduce using rule 102 (pn_push_operator -> .)
 
-    pn_push_operator               shift and go to state 190
+    pn_push_operator               shift and go to state 193
 
 state 163
 
@@ -2824,13 +2834,13 @@ state 163
     CTE_INT         reduce using rule 102 (pn_push_operator -> .)
     CTE_FLOAT       reduce using rule 102 (pn_push_operator -> .)
 
-    pn_push_operator               shift and go to state 191
+    pn_push_operator               shift and go to state 194
 
 state 164
 
     (60) llamada -> ID LPAREN aux_llamada . RPAREN SEMICOLON
 
-    RPAREN          shift and go to state 192
+    RPAREN          shift and go to state 195
 
 
 state 165
@@ -2839,7 +2849,7 @@ state 165
     (62) aux_llamada -> expresion . COMMA aux_llamada
 
     RPAREN          reduce using rule 61 (aux_llamada -> expresion .)
-    COMMA           shift and go to state 193
+    COMMA           shift and go to state 196
 
 
 state 166
@@ -2862,7 +2872,7 @@ state 167
     (32) aux_escritura -> pn_push_write_operator letrero pn_write . COMMA aux_escritura
 
     RPAREN          reduce using rule 30 (aux_escritura -> pn_push_write_operator letrero pn_write .)
-    COMMA           shift and go to state 194
+    COMMA           shift and go to state 197
 
 
 state 168
@@ -2871,7 +2881,7 @@ state 168
     (33) aux_escritura -> pn_push_write_operator expresion pn_write . COMMA aux_escritura
 
     RPAREN          reduce using rule 31 (aux_escritura -> pn_push_write_operator expresion pn_write .)
-    COMMA           shift and go to state 195
+    COMMA           shift and go to state 198
 
 
 state 169
@@ -2886,7 +2896,7 @@ state 170
 
     (54) letrero -> QUOTATION aux_letrero . QUOTATION
 
-    QUOTATION       shift and go to state 196
+    QUOTATION       shift and go to state 199
 
 
 state 171
@@ -2899,7 +2909,7 @@ state 171
     QUOTATION       reduce using rule 56 (aux_letrero -> CTE_CHAR .)
     CTE_CHAR        shift and go to state 171
 
-    aux_letrero                    shift and go to state 197
+    aux_letrero                    shift and go to state 200
 
 state 172
 
@@ -2927,18 +2937,15 @@ state 173
     LSQUARE         reduce using rule 107 (pn_read -> .)
     RPAREN          reduce using rule 107 (pn_read -> .)
 
-    pn_read                        shift and go to state 198
+    pn_read                        shift and go to state 201
 
 state 174
 
-    (58) decision -> IF LPAREN expresion RPAREN THEN . bloque
-    (59) decision -> IF LPAREN expresion RPAREN THEN . bloque ELSE bloque
-    (35) bloque -> . LBRACKET estatutos RBRACKET
-    (36) bloque -> . LBRACKET RBRACKET
+    (58) decision -> IF LPAREN expresion pn_if_1 RPAREN . THEN bloque pn_if_2
+    (59) decision -> IF LPAREN expresion pn_if_1 RPAREN . THEN bloque ELSE pn_else bloque pn_if_2
 
-    LBRACKET        shift and go to state 44
+    THEN            shift and go to state 202
 
-    bloque                         shift and go to state 199
 
 state 175
 
@@ -2952,89 +2959,19 @@ state 175
     CTE_INT         reduce using rule 102 (pn_push_operator -> .)
     CTE_FLOAT       reduce using rule 102 (pn_push_operator -> .)
 
-    pn_push_operator               shift and go to state 200
+    pn_push_operator               shift and go to state 203
 
 state 176
 
     (64) no_condicional -> FOR ID pn_push_operand_and_type ASSIGN pn_push_operator . expresion TO expresion DO bloque
     (68) expresion -> . comparacion aux_expresion
     (69) expresion -> . aux_comparacion
-    (74) comparacion -> . exp LESSTHAN exp
-    (75) comparacion -> . exp GREATERTHAN exp
-    (76) comparacion -> . exp EQUAL exp
-    (77) aux_comparacion -> . exp LESSTHAN exp
-    (78) aux_comparacion -> . exp GREATERTHAN exp
-    (79) aux_comparacion -> . exp EQUAL exp
-    (80) aux_comparacion -> . exp
-    (81) exp -> . termino pn_addition_substraction
-    (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
-    (83) exp -> . termino pn_addition_substraction MINUS pn_push_operator exp
-    (84) termino -> . factor pn_multiplication_division
-    (85) termino -> . factor pn_multiplication_division MULT pn_push_operator termino
-    (86) termino -> . factor pn_multiplication_division DIV pn_push_operator termino
-    (87) factor -> . LPAREN expresion RPAREN
-    (88) factor -> . PLUS var_cte
-    (89) factor -> . PLUS llamada
-    (90) factor -> . MINUS var_cte
-    (91) factor -> . MINUS llamada
-    (92) factor -> . var_cte
-    (93) factor -> . llamada
-    (94) var_cte -> . ID pn_push_operand_and_type
-    (95) var_cte -> . CTE_INT pn_push_constant_and_type
-    (96) var_cte -> . CTE_FLOAT pn_push_constant_and_type
-    (60) llamada -> . ID LPAREN aux_llamada RPAREN SEMICOLON
-
-    LPAREN          shift and go to state 88
-    PLUS            shift and go to state 94
-    MINUS           shift and go to state 95
-    ID              shift and go to state 99
-    CTE_INT         shift and go to state 100
-    CTE_FLOAT       shift and go to state 101
-
-    expresion                      shift and go to state 201
-    comparacion                    shift and go to state 90
-    aux_comparacion                shift and go to state 91
-    exp                            shift and go to state 92
-    termino                        shift and go to state 93
-    factor                         shift and go to state 96
-    var_cte                        shift and go to state 97
-    llamada                        shift and go to state 98
-
-state 177
-
-    (26) aux_lista -> ID pn_add_symbol LSQUARE CTE_INT RSQUARE LSQUARE CTE_INT RSQUARE .
-
-    COMMA           reduce using rule 26 (aux_lista -> ID pn_add_symbol LSQUARE CTE_INT RSQUARE LSQUARE CTE_INT RSQUARE .)
-    SEMICOLON       reduce using rule 26 (aux_lista -> ID pn_add_symbol LSQUARE CTE_INT RSQUARE LSQUARE CTE_INT RSQUARE .)
-
-
-state 178
-
-    (46) asignacion -> ID pn_push_operand_and_type dimensiones ASSIGN pn_push_operator expresion . pn_assign SEMICOLON
-    (105) pn_assign -> .
-
-    SEMICOLON       reduce using rule 105 (pn_assign -> .)
-
-    pn_assign                      shift and go to state 202
-
-state 179
-
-    (47) asignacion -> ID pn_push_operand_and_type ASSIGN pn_push_operator expresion pn_assign . SEMICOLON
-
-    SEMICOLON       shift and go to state 203
-
-
-state 180
-
-    (65) dimensiones -> LSQUARE expresion RSQUARE LSQUARE . expresion RSQUARE
-    (68) expresion -> . comparacion aux_expresion
-    (69) expresion -> . aux_comparacion
-    (74) comparacion -> . exp LESSTHAN exp
-    (75) comparacion -> . exp GREATERTHAN exp
-    (76) comparacion -> . exp EQUAL exp
-    (77) aux_comparacion -> . exp LESSTHAN exp
-    (78) aux_comparacion -> . exp GREATERTHAN exp
-    (79) aux_comparacion -> . exp EQUAL exp
+    (74) comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (75) comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (76) comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
+    (77) aux_comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (78) aux_comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (79) aux_comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
     (80) aux_comparacion -> . exp
     (81) exp -> . termino pn_addition_substraction
     (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
@@ -3070,11 +3007,81 @@ state 180
     var_cte                        shift and go to state 97
     llamada                        shift and go to state 98
 
+state 177
+
+    (26) aux_lista -> ID pn_add_symbol LSQUARE CTE_INT RSQUARE LSQUARE CTE_INT RSQUARE .
+
+    COMMA           reduce using rule 26 (aux_lista -> ID pn_add_symbol LSQUARE CTE_INT RSQUARE LSQUARE CTE_INT RSQUARE .)
+    SEMICOLON       reduce using rule 26 (aux_lista -> ID pn_add_symbol LSQUARE CTE_INT RSQUARE LSQUARE CTE_INT RSQUARE .)
+
+
+state 178
+
+    (46) asignacion -> ID pn_push_operand_and_type dimensiones ASSIGN pn_push_operator expresion . pn_assign SEMICOLON
+    (105) pn_assign -> .
+
+    SEMICOLON       reduce using rule 105 (pn_assign -> .)
+
+    pn_assign                      shift and go to state 205
+
+state 179
+
+    (47) asignacion -> ID pn_push_operand_and_type ASSIGN pn_push_operator expresion pn_assign . SEMICOLON
+
+    SEMICOLON       shift and go to state 206
+
+
+state 180
+
+    (65) dimensiones -> LSQUARE expresion RSQUARE LSQUARE . expresion RSQUARE
+    (68) expresion -> . comparacion aux_expresion
+    (69) expresion -> . aux_comparacion
+    (74) comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (75) comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (76) comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
+    (77) aux_comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (78) aux_comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (79) aux_comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
+    (80) aux_comparacion -> . exp
+    (81) exp -> . termino pn_addition_substraction
+    (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
+    (83) exp -> . termino pn_addition_substraction MINUS pn_push_operator exp
+    (84) termino -> . factor pn_multiplication_division
+    (85) termino -> . factor pn_multiplication_division MULT pn_push_operator termino
+    (86) termino -> . factor pn_multiplication_division DIV pn_push_operator termino
+    (87) factor -> . LPAREN expresion RPAREN
+    (88) factor -> . PLUS var_cte
+    (89) factor -> . PLUS llamada
+    (90) factor -> . MINUS var_cte
+    (91) factor -> . MINUS llamada
+    (92) factor -> . var_cte
+    (93) factor -> . llamada
+    (94) var_cte -> . ID pn_push_operand_and_type
+    (95) var_cte -> . CTE_INT pn_push_constant_and_type
+    (96) var_cte -> . CTE_FLOAT pn_push_constant_and_type
+    (60) llamada -> . ID LPAREN aux_llamada RPAREN SEMICOLON
+
+    LPAREN          shift and go to state 88
+    PLUS            shift and go to state 94
+    MINUS           shift and go to state 95
+    ID              shift and go to state 99
+    CTE_INT         shift and go to state 100
+    CTE_FLOAT       shift and go to state 101
+
+    expresion                      shift and go to state 207
+    comparacion                    shift and go to state 90
+    aux_comparacion                shift and go to state 91
+    exp                            shift and go to state 92
+    termino                        shift and go to state 93
+    factor                         shift and go to state 96
+    var_cte                        shift and go to state 97
+    llamada                        shift and go to state 98
+
 state 181
 
     (66) dimensiones -> LSQUARE expresion COMMA expresion . RSQUARE
 
-    RSQUARE         shift and go to state 205
+    RSQUARE         shift and go to state 208
 
 
 state 182
@@ -3105,105 +3112,45 @@ state 183
 
 state 184
 
-    (74) comparacion -> exp LESSTHAN . exp
-    (81) exp -> . termino pn_addition_substraction
-    (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
-    (83) exp -> . termino pn_addition_substraction MINUS pn_push_operator exp
-    (84) termino -> . factor pn_multiplication_division
-    (85) termino -> . factor pn_multiplication_division MULT pn_push_operator termino
-    (86) termino -> . factor pn_multiplication_division DIV pn_push_operator termino
-    (87) factor -> . LPAREN expresion RPAREN
-    (88) factor -> . PLUS var_cte
-    (89) factor -> . PLUS llamada
-    (90) factor -> . MINUS var_cte
-    (91) factor -> . MINUS llamada
-    (92) factor -> . var_cte
-    (93) factor -> . llamada
-    (94) var_cte -> . ID pn_push_operand_and_type
-    (95) var_cte -> . CTE_INT pn_push_constant_and_type
-    (96) var_cte -> . CTE_FLOAT pn_push_constant_and_type
-    (60) llamada -> . ID LPAREN aux_llamada RPAREN SEMICOLON
+    (74) comparacion -> exp LESSTHAN . pn_push_operator exp pn_comparison
+    (102) pn_push_operator -> .
 
-    LPAREN          shift and go to state 88
-    PLUS            shift and go to state 94
-    MINUS           shift and go to state 95
-    ID              shift and go to state 99
-    CTE_INT         shift and go to state 100
-    CTE_FLOAT       shift and go to state 101
+    LPAREN          reduce using rule 102 (pn_push_operator -> .)
+    PLUS            reduce using rule 102 (pn_push_operator -> .)
+    MINUS           reduce using rule 102 (pn_push_operator -> .)
+    ID              reduce using rule 102 (pn_push_operator -> .)
+    CTE_INT         reduce using rule 102 (pn_push_operator -> .)
+    CTE_FLOAT       reduce using rule 102 (pn_push_operator -> .)
 
-    exp                            shift and go to state 206
-    termino                        shift and go to state 93
-    factor                         shift and go to state 96
-    var_cte                        shift and go to state 97
-    llamada                        shift and go to state 98
+    pn_push_operator               shift and go to state 209
 
 state 185
 
-    (75) comparacion -> exp GREATERTHAN . exp
-    (81) exp -> . termino pn_addition_substraction
-    (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
-    (83) exp -> . termino pn_addition_substraction MINUS pn_push_operator exp
-    (84) termino -> . factor pn_multiplication_division
-    (85) termino -> . factor pn_multiplication_division MULT pn_push_operator termino
-    (86) termino -> . factor pn_multiplication_division DIV pn_push_operator termino
-    (87) factor -> . LPAREN expresion RPAREN
-    (88) factor -> . PLUS var_cte
-    (89) factor -> . PLUS llamada
-    (90) factor -> . MINUS var_cte
-    (91) factor -> . MINUS llamada
-    (92) factor -> . var_cte
-    (93) factor -> . llamada
-    (94) var_cte -> . ID pn_push_operand_and_type
-    (95) var_cte -> . CTE_INT pn_push_constant_and_type
-    (96) var_cte -> . CTE_FLOAT pn_push_constant_and_type
-    (60) llamada -> . ID LPAREN aux_llamada RPAREN SEMICOLON
+    (75) comparacion -> exp GREATERTHAN . pn_push_operator exp pn_comparison
+    (102) pn_push_operator -> .
 
-    LPAREN          shift and go to state 88
-    PLUS            shift and go to state 94
-    MINUS           shift and go to state 95
-    ID              shift and go to state 99
-    CTE_INT         shift and go to state 100
-    CTE_FLOAT       shift and go to state 101
+    LPAREN          reduce using rule 102 (pn_push_operator -> .)
+    PLUS            reduce using rule 102 (pn_push_operator -> .)
+    MINUS           reduce using rule 102 (pn_push_operator -> .)
+    ID              reduce using rule 102 (pn_push_operator -> .)
+    CTE_INT         reduce using rule 102 (pn_push_operator -> .)
+    CTE_FLOAT       reduce using rule 102 (pn_push_operator -> .)
 
-    exp                            shift and go to state 207
-    termino                        shift and go to state 93
-    factor                         shift and go to state 96
-    var_cte                        shift and go to state 97
-    llamada                        shift and go to state 98
+    pn_push_operator               shift and go to state 210
 
 state 186
 
-    (76) comparacion -> exp EQUAL . exp
-    (81) exp -> . termino pn_addition_substraction
-    (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
-    (83) exp -> . termino pn_addition_substraction MINUS pn_push_operator exp
-    (84) termino -> . factor pn_multiplication_division
-    (85) termino -> . factor pn_multiplication_division MULT pn_push_operator termino
-    (86) termino -> . factor pn_multiplication_division DIV pn_push_operator termino
-    (87) factor -> . LPAREN expresion RPAREN
-    (88) factor -> . PLUS var_cte
-    (89) factor -> . PLUS llamada
-    (90) factor -> . MINUS var_cte
-    (91) factor -> . MINUS llamada
-    (92) factor -> . var_cte
-    (93) factor -> . llamada
-    (94) var_cte -> . ID pn_push_operand_and_type
-    (95) var_cte -> . CTE_INT pn_push_constant_and_type
-    (96) var_cte -> . CTE_FLOAT pn_push_constant_and_type
-    (60) llamada -> . ID LPAREN aux_llamada RPAREN SEMICOLON
+    (76) comparacion -> exp EQUAL . pn_push_operator exp pn_comparison
+    (102) pn_push_operator -> .
 
-    LPAREN          shift and go to state 88
-    PLUS            shift and go to state 94
-    MINUS           shift and go to state 95
-    ID              shift and go to state 99
-    CTE_INT         shift and go to state 100
-    CTE_FLOAT       shift and go to state 101
+    LPAREN          reduce using rule 102 (pn_push_operator -> .)
+    PLUS            reduce using rule 102 (pn_push_operator -> .)
+    MINUS           reduce using rule 102 (pn_push_operator -> .)
+    ID              reduce using rule 102 (pn_push_operator -> .)
+    CTE_INT         reduce using rule 102 (pn_push_operator -> .)
+    CTE_FLOAT       reduce using rule 102 (pn_push_operator -> .)
 
-    exp                            shift and go to state 208
-    termino                        shift and go to state 93
-    factor                         shift and go to state 96
-    var_cte                        shift and go to state 97
-    llamada                        shift and go to state 98
+    pn_push_operator               shift and go to state 211
 
 state 187
 
@@ -3218,6 +3165,57 @@ state 187
 
 
 state 188
+
+    (74) comparacion -> exp LESSTHAN pn_push_operator exp . pn_comparison
+    (77) aux_comparacion -> exp LESSTHAN pn_push_operator exp . pn_comparison
+    (110) pn_comparison -> .
+
+    AND             reduce using rule 110 (pn_comparison -> .)
+    OR              reduce using rule 110 (pn_comparison -> .)
+    RPAREN          reduce using rule 110 (pn_comparison -> .)
+    RSQUARE         reduce using rule 110 (pn_comparison -> .)
+    COMMA           reduce using rule 110 (pn_comparison -> .)
+    SEMICOLON       reduce using rule 110 (pn_comparison -> .)
+    TO              reduce using rule 110 (pn_comparison -> .)
+    DO              reduce using rule 110 (pn_comparison -> .)
+
+    pn_comparison                  shift and go to state 212
+
+state 189
+
+    (75) comparacion -> exp GREATERTHAN pn_push_operator exp . pn_comparison
+    (78) aux_comparacion -> exp GREATERTHAN pn_push_operator exp . pn_comparison
+    (110) pn_comparison -> .
+
+    AND             reduce using rule 110 (pn_comparison -> .)
+    OR              reduce using rule 110 (pn_comparison -> .)
+    RPAREN          reduce using rule 110 (pn_comparison -> .)
+    RSQUARE         reduce using rule 110 (pn_comparison -> .)
+    COMMA           reduce using rule 110 (pn_comparison -> .)
+    SEMICOLON       reduce using rule 110 (pn_comparison -> .)
+    TO              reduce using rule 110 (pn_comparison -> .)
+    DO              reduce using rule 110 (pn_comparison -> .)
+
+    pn_comparison                  shift and go to state 213
+
+state 190
+
+    (76) comparacion -> exp EQUAL pn_push_operator exp . pn_comparison
+    (79) aux_comparacion -> exp EQUAL pn_push_operator exp . pn_comparison
+    (110) pn_comparison -> .
+
+    AND             reduce using rule 110 (pn_comparison -> .)
+    OR              reduce using rule 110 (pn_comparison -> .)
+    RPAREN          reduce using rule 110 (pn_comparison -> .)
+    RSQUARE         reduce using rule 110 (pn_comparison -> .)
+    COMMA           reduce using rule 110 (pn_comparison -> .)
+    SEMICOLON       reduce using rule 110 (pn_comparison -> .)
+    TO              reduce using rule 110 (pn_comparison -> .)
+    DO              reduce using rule 110 (pn_comparison -> .)
+
+    pn_comparison                  shift and go to state 214
+
+state 191
 
     (82) exp -> termino pn_addition_substraction PLUS pn_push_operator . exp
     (81) exp -> . termino pn_addition_substraction
@@ -3246,12 +3244,12 @@ state 188
     CTE_FLOAT       shift and go to state 101
 
     termino                        shift and go to state 93
-    exp                            shift and go to state 209
+    exp                            shift and go to state 215
     factor                         shift and go to state 96
     var_cte                        shift and go to state 97
     llamada                        shift and go to state 98
 
-state 189
+state 192
 
     (83) exp -> termino pn_addition_substraction MINUS pn_push_operator . exp
     (81) exp -> . termino pn_addition_substraction
@@ -3280,12 +3278,12 @@ state 189
     CTE_FLOAT       shift and go to state 101
 
     termino                        shift and go to state 93
-    exp                            shift and go to state 210
+    exp                            shift and go to state 216
     factor                         shift and go to state 96
     var_cte                        shift and go to state 97
     llamada                        shift and go to state 98
 
-state 190
+state 193
 
     (85) termino -> factor pn_multiplication_division MULT pn_push_operator . termino
     (84) termino -> . factor pn_multiplication_division
@@ -3311,11 +3309,11 @@ state 190
     CTE_FLOAT       shift and go to state 101
 
     factor                         shift and go to state 96
-    termino                        shift and go to state 211
+    termino                        shift and go to state 217
     var_cte                        shift and go to state 97
     llamada                        shift and go to state 98
 
-state 191
+state 194
 
     (86) termino -> factor pn_multiplication_division DIV pn_push_operator . termino
     (84) termino -> . factor pn_multiplication_division
@@ -3341,30 +3339,30 @@ state 191
     CTE_FLOAT       shift and go to state 101
 
     factor                         shift and go to state 96
-    termino                        shift and go to state 212
+    termino                        shift and go to state 218
     var_cte                        shift and go to state 97
     llamada                        shift and go to state 98
 
-state 192
+state 195
 
     (60) llamada -> ID LPAREN aux_llamada RPAREN . SEMICOLON
 
-    SEMICOLON       shift and go to state 213
+    SEMICOLON       shift and go to state 219
 
 
-state 193
+state 196
 
     (62) aux_llamada -> expresion COMMA . aux_llamada
     (61) aux_llamada -> . expresion
     (62) aux_llamada -> . expresion COMMA aux_llamada
     (68) expresion -> . comparacion aux_expresion
     (69) expresion -> . aux_comparacion
-    (74) comparacion -> . exp LESSTHAN exp
-    (75) comparacion -> . exp GREATERTHAN exp
-    (76) comparacion -> . exp EQUAL exp
-    (77) aux_comparacion -> . exp LESSTHAN exp
-    (78) aux_comparacion -> . exp GREATERTHAN exp
-    (79) aux_comparacion -> . exp EQUAL exp
+    (74) comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (75) comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (76) comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
+    (77) aux_comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (78) aux_comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (79) aux_comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
     (80) aux_comparacion -> . exp
     (81) exp -> . termino pn_addition_substraction
     (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
@@ -3392,7 +3390,7 @@ state 193
     CTE_FLOAT       shift and go to state 101
 
     expresion                      shift and go to state 165
-    aux_llamada                    shift and go to state 214
+    aux_llamada                    shift and go to state 220
     comparacion                    shift and go to state 90
     aux_comparacion                shift and go to state 91
     exp                            shift and go to state 92
@@ -3401,7 +3399,7 @@ state 193
     var_cte                        shift and go to state 97
     llamada                        shift and go to state 98
 
-state 194
+state 197
 
     (32) aux_escritura -> pn_push_write_operator letrero pn_write COMMA . aux_escritura
     (30) aux_escritura -> . pn_push_write_operator letrero pn_write
@@ -3419,9 +3417,9 @@ state 194
     CTE_FLOAT       reduce using rule 108 (pn_push_write_operator -> .)
 
     pn_push_write_operator         shift and go to state 103
-    aux_escritura                  shift and go to state 215
+    aux_escritura                  shift and go to state 221
 
-state 195
+state 198
 
     (33) aux_escritura -> pn_push_write_operator expresion pn_write COMMA . aux_escritura
     (30) aux_escritura -> . pn_push_write_operator letrero pn_write
@@ -3439,9 +3437,9 @@ state 195
     CTE_FLOAT       reduce using rule 108 (pn_push_write_operator -> .)
 
     pn_push_write_operator         shift and go to state 103
-    aux_escritura                  shift and go to state 216
+    aux_escritura                  shift and go to state 222
 
-state 196
+state 199
 
     (54) letrero -> QUOTATION aux_letrero QUOTATION .
 
@@ -3449,14 +3447,14 @@ state 196
     RPAREN          reduce using rule 54 (letrero -> QUOTATION aux_letrero QUOTATION .)
 
 
-state 197
+state 200
 
     (57) aux_letrero -> CTE_CHAR aux_letrero .
 
     QUOTATION       reduce using rule 57 (aux_letrero -> CTE_CHAR aux_letrero .)
 
 
-state 198
+state 201
 
     (50) aux_lectura -> pn_push_read_operator ID pn_push_operand_and_type pn_read .
     (51) aux_lectura -> pn_push_read_operator ID pn_push_operand_and_type pn_read . dimensiones
@@ -3467,38 +3465,33 @@ state 198
     (67) dimensiones -> . LSQUARE expresion RSQUARE
 
     RPAREN          reduce using rule 50 (aux_lectura -> pn_push_read_operator ID pn_push_operand_and_type pn_read .)
-    COMMA           shift and go to state 218
+    COMMA           shift and go to state 224
     LSQUARE         shift and go to state 87
 
-    dimensiones                    shift and go to state 217
+    dimensiones                    shift and go to state 223
 
-state 199
+state 202
 
-    (58) decision -> IF LPAREN expresion RPAREN THEN bloque .
-    (59) decision -> IF LPAREN expresion RPAREN THEN bloque . ELSE bloque
+    (58) decision -> IF LPAREN expresion pn_if_1 RPAREN THEN . bloque pn_if_2
+    (59) decision -> IF LPAREN expresion pn_if_1 RPAREN THEN . bloque ELSE pn_else bloque pn_if_2
+    (35) bloque -> . LBRACKET estatutos RBRACKET
+    (36) bloque -> . LBRACKET RBRACKET
 
-    ID              reduce using rule 58 (decision -> IF LPAREN expresion RPAREN THEN bloque .)
-    WHILE           reduce using rule 58 (decision -> IF LPAREN expresion RPAREN THEN bloque .)
-    WRITE           reduce using rule 58 (decision -> IF LPAREN expresion RPAREN THEN bloque .)
-    RETURN          reduce using rule 58 (decision -> IF LPAREN expresion RPAREN THEN bloque .)
-    READ            reduce using rule 58 (decision -> IF LPAREN expresion RPAREN THEN bloque .)
-    IF              reduce using rule 58 (decision -> IF LPAREN expresion RPAREN THEN bloque .)
-    FOR             reduce using rule 58 (decision -> IF LPAREN expresion RPAREN THEN bloque .)
-    RBRACKET        reduce using rule 58 (decision -> IF LPAREN expresion RPAREN THEN bloque .)
-    ELSE            shift and go to state 219
+    LBRACKET        shift and go to state 44
 
+    bloque                         shift and go to state 225
 
-state 200
+state 203
 
     (63) no_condicional -> FOR ID pn_push_operand_and_type dimensiones ASSIGN pn_push_operator . expresion TO expresion DO bloque
     (68) expresion -> . comparacion aux_expresion
     (69) expresion -> . aux_comparacion
-    (74) comparacion -> . exp LESSTHAN exp
-    (75) comparacion -> . exp GREATERTHAN exp
-    (76) comparacion -> . exp EQUAL exp
-    (77) aux_comparacion -> . exp LESSTHAN exp
-    (78) aux_comparacion -> . exp GREATERTHAN exp
-    (79) aux_comparacion -> . exp EQUAL exp
+    (74) comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (75) comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (76) comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
+    (77) aux_comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (78) aux_comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (79) aux_comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
     (80) aux_comparacion -> . exp
     (81) exp -> . termino pn_addition_substraction
     (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
@@ -3525,7 +3518,7 @@ state 200
     CTE_INT         shift and go to state 100
     CTE_FLOAT       shift and go to state 101
 
-    expresion                      shift and go to state 220
+    expresion                      shift and go to state 226
     comparacion                    shift and go to state 90
     aux_comparacion                shift and go to state 91
     exp                            shift and go to state 92
@@ -3534,21 +3527,21 @@ state 200
     var_cte                        shift and go to state 97
     llamada                        shift and go to state 98
 
-state 201
+state 204
 
     (64) no_condicional -> FOR ID pn_push_operand_and_type ASSIGN pn_push_operator expresion . TO expresion DO bloque
 
-    TO              shift and go to state 221
+    TO              shift and go to state 227
 
 
-state 202
+state 205
 
     (46) asignacion -> ID pn_push_operand_and_type dimensiones ASSIGN pn_push_operator expresion pn_assign . SEMICOLON
 
-    SEMICOLON       shift and go to state 222
+    SEMICOLON       shift and go to state 228
 
 
-state 203
+state 206
 
     (47) asignacion -> ID pn_push_operand_and_type ASSIGN pn_push_operator expresion pn_assign SEMICOLON .
 
@@ -3562,14 +3555,14 @@ state 203
     RBRACKET        reduce using rule 47 (asignacion -> ID pn_push_operand_and_type ASSIGN pn_push_operator expresion pn_assign SEMICOLON .)
 
 
-state 204
+state 207
 
     (65) dimensiones -> LSQUARE expresion RSQUARE LSQUARE expresion . RSQUARE
 
-    RSQUARE         shift and go to state 223
+    RSQUARE         shift and go to state 229
 
 
-state 205
+state 208
 
     (66) dimensiones -> LSQUARE expresion COMMA expresion RSQUARE .
 
@@ -3578,49 +3571,154 @@ state 205
     RPAREN          reduce using rule 66 (dimensiones -> LSQUARE expresion COMMA expresion RSQUARE .)
 
 
-state 206
-
-    (74) comparacion -> exp LESSTHAN exp .
-
-    AND             reduce using rule 74 (comparacion -> exp LESSTHAN exp .)
-    OR              reduce using rule 74 (comparacion -> exp LESSTHAN exp .)
-    RPAREN          reduce using rule 74 (comparacion -> exp LESSTHAN exp .)
-    RSQUARE         reduce using rule 74 (comparacion -> exp LESSTHAN exp .)
-    COMMA           reduce using rule 74 (comparacion -> exp LESSTHAN exp .)
-    SEMICOLON       reduce using rule 74 (comparacion -> exp LESSTHAN exp .)
-    TO              reduce using rule 74 (comparacion -> exp LESSTHAN exp .)
-    DO              reduce using rule 74 (comparacion -> exp LESSTHAN exp .)
-
-
-state 207
-
-    (75) comparacion -> exp GREATERTHAN exp .
-
-    AND             reduce using rule 75 (comparacion -> exp GREATERTHAN exp .)
-    OR              reduce using rule 75 (comparacion -> exp GREATERTHAN exp .)
-    RPAREN          reduce using rule 75 (comparacion -> exp GREATERTHAN exp .)
-    RSQUARE         reduce using rule 75 (comparacion -> exp GREATERTHAN exp .)
-    COMMA           reduce using rule 75 (comparacion -> exp GREATERTHAN exp .)
-    SEMICOLON       reduce using rule 75 (comparacion -> exp GREATERTHAN exp .)
-    TO              reduce using rule 75 (comparacion -> exp GREATERTHAN exp .)
-    DO              reduce using rule 75 (comparacion -> exp GREATERTHAN exp .)
-
-
-state 208
-
-    (76) comparacion -> exp EQUAL exp .
-
-    AND             reduce using rule 76 (comparacion -> exp EQUAL exp .)
-    OR              reduce using rule 76 (comparacion -> exp EQUAL exp .)
-    RPAREN          reduce using rule 76 (comparacion -> exp EQUAL exp .)
-    RSQUARE         reduce using rule 76 (comparacion -> exp EQUAL exp .)
-    COMMA           reduce using rule 76 (comparacion -> exp EQUAL exp .)
-    SEMICOLON       reduce using rule 76 (comparacion -> exp EQUAL exp .)
-    TO              reduce using rule 76 (comparacion -> exp EQUAL exp .)
-    DO              reduce using rule 76 (comparacion -> exp EQUAL exp .)
-
-
 state 209
+
+    (74) comparacion -> exp LESSTHAN pn_push_operator . exp pn_comparison
+    (81) exp -> . termino pn_addition_substraction
+    (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
+    (83) exp -> . termino pn_addition_substraction MINUS pn_push_operator exp
+    (84) termino -> . factor pn_multiplication_division
+    (85) termino -> . factor pn_multiplication_division MULT pn_push_operator termino
+    (86) termino -> . factor pn_multiplication_division DIV pn_push_operator termino
+    (87) factor -> . LPAREN expresion RPAREN
+    (88) factor -> . PLUS var_cte
+    (89) factor -> . PLUS llamada
+    (90) factor -> . MINUS var_cte
+    (91) factor -> . MINUS llamada
+    (92) factor -> . var_cte
+    (93) factor -> . llamada
+    (94) var_cte -> . ID pn_push_operand_and_type
+    (95) var_cte -> . CTE_INT pn_push_constant_and_type
+    (96) var_cte -> . CTE_FLOAT pn_push_constant_and_type
+    (60) llamada -> . ID LPAREN aux_llamada RPAREN SEMICOLON
+
+    LPAREN          shift and go to state 88
+    PLUS            shift and go to state 94
+    MINUS           shift and go to state 95
+    ID              shift and go to state 99
+    CTE_INT         shift and go to state 100
+    CTE_FLOAT       shift and go to state 101
+
+    exp                            shift and go to state 230
+    termino                        shift and go to state 93
+    factor                         shift and go to state 96
+    var_cte                        shift and go to state 97
+    llamada                        shift and go to state 98
+
+state 210
+
+    (75) comparacion -> exp GREATERTHAN pn_push_operator . exp pn_comparison
+    (81) exp -> . termino pn_addition_substraction
+    (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
+    (83) exp -> . termino pn_addition_substraction MINUS pn_push_operator exp
+    (84) termino -> . factor pn_multiplication_division
+    (85) termino -> . factor pn_multiplication_division MULT pn_push_operator termino
+    (86) termino -> . factor pn_multiplication_division DIV pn_push_operator termino
+    (87) factor -> . LPAREN expresion RPAREN
+    (88) factor -> . PLUS var_cte
+    (89) factor -> . PLUS llamada
+    (90) factor -> . MINUS var_cte
+    (91) factor -> . MINUS llamada
+    (92) factor -> . var_cte
+    (93) factor -> . llamada
+    (94) var_cte -> . ID pn_push_operand_and_type
+    (95) var_cte -> . CTE_INT pn_push_constant_and_type
+    (96) var_cte -> . CTE_FLOAT pn_push_constant_and_type
+    (60) llamada -> . ID LPAREN aux_llamada RPAREN SEMICOLON
+
+    LPAREN          shift and go to state 88
+    PLUS            shift and go to state 94
+    MINUS           shift and go to state 95
+    ID              shift and go to state 99
+    CTE_INT         shift and go to state 100
+    CTE_FLOAT       shift and go to state 101
+
+    exp                            shift and go to state 231
+    termino                        shift and go to state 93
+    factor                         shift and go to state 96
+    var_cte                        shift and go to state 97
+    llamada                        shift and go to state 98
+
+state 211
+
+    (76) comparacion -> exp EQUAL pn_push_operator . exp pn_comparison
+    (81) exp -> . termino pn_addition_substraction
+    (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
+    (83) exp -> . termino pn_addition_substraction MINUS pn_push_operator exp
+    (84) termino -> . factor pn_multiplication_division
+    (85) termino -> . factor pn_multiplication_division MULT pn_push_operator termino
+    (86) termino -> . factor pn_multiplication_division DIV pn_push_operator termino
+    (87) factor -> . LPAREN expresion RPAREN
+    (88) factor -> . PLUS var_cte
+    (89) factor -> . PLUS llamada
+    (90) factor -> . MINUS var_cte
+    (91) factor -> . MINUS llamada
+    (92) factor -> . var_cte
+    (93) factor -> . llamada
+    (94) var_cte -> . ID pn_push_operand_and_type
+    (95) var_cte -> . CTE_INT pn_push_constant_and_type
+    (96) var_cte -> . CTE_FLOAT pn_push_constant_and_type
+    (60) llamada -> . ID LPAREN aux_llamada RPAREN SEMICOLON
+
+    LPAREN          shift and go to state 88
+    PLUS            shift and go to state 94
+    MINUS           shift and go to state 95
+    ID              shift and go to state 99
+    CTE_INT         shift and go to state 100
+    CTE_FLOAT       shift and go to state 101
+
+    exp                            shift and go to state 232
+    termino                        shift and go to state 93
+    factor                         shift and go to state 96
+    var_cte                        shift and go to state 97
+    llamada                        shift and go to state 98
+
+state 212
+
+    (74) comparacion -> exp LESSTHAN pn_push_operator exp pn_comparison .
+    (77) aux_comparacion -> exp LESSTHAN pn_push_operator exp pn_comparison .
+
+    AND             reduce using rule 74 (comparacion -> exp LESSTHAN pn_push_operator exp pn_comparison .)
+    OR              reduce using rule 74 (comparacion -> exp LESSTHAN pn_push_operator exp pn_comparison .)
+    RPAREN          reduce using rule 77 (aux_comparacion -> exp LESSTHAN pn_push_operator exp pn_comparison .)
+    RSQUARE         reduce using rule 77 (aux_comparacion -> exp LESSTHAN pn_push_operator exp pn_comparison .)
+    COMMA           reduce using rule 77 (aux_comparacion -> exp LESSTHAN pn_push_operator exp pn_comparison .)
+    SEMICOLON       reduce using rule 77 (aux_comparacion -> exp LESSTHAN pn_push_operator exp pn_comparison .)
+    TO              reduce using rule 77 (aux_comparacion -> exp LESSTHAN pn_push_operator exp pn_comparison .)
+    DO              reduce using rule 77 (aux_comparacion -> exp LESSTHAN pn_push_operator exp pn_comparison .)
+
+
+state 213
+
+    (75) comparacion -> exp GREATERTHAN pn_push_operator exp pn_comparison .
+    (78) aux_comparacion -> exp GREATERTHAN pn_push_operator exp pn_comparison .
+
+    AND             reduce using rule 75 (comparacion -> exp GREATERTHAN pn_push_operator exp pn_comparison .)
+    OR              reduce using rule 75 (comparacion -> exp GREATERTHAN pn_push_operator exp pn_comparison .)
+    RPAREN          reduce using rule 78 (aux_comparacion -> exp GREATERTHAN pn_push_operator exp pn_comparison .)
+    RSQUARE         reduce using rule 78 (aux_comparacion -> exp GREATERTHAN pn_push_operator exp pn_comparison .)
+    COMMA           reduce using rule 78 (aux_comparacion -> exp GREATERTHAN pn_push_operator exp pn_comparison .)
+    SEMICOLON       reduce using rule 78 (aux_comparacion -> exp GREATERTHAN pn_push_operator exp pn_comparison .)
+    TO              reduce using rule 78 (aux_comparacion -> exp GREATERTHAN pn_push_operator exp pn_comparison .)
+    DO              reduce using rule 78 (aux_comparacion -> exp GREATERTHAN pn_push_operator exp pn_comparison .)
+
+
+state 214
+
+    (76) comparacion -> exp EQUAL pn_push_operator exp pn_comparison .
+    (79) aux_comparacion -> exp EQUAL pn_push_operator exp pn_comparison .
+
+    AND             reduce using rule 76 (comparacion -> exp EQUAL pn_push_operator exp pn_comparison .)
+    OR              reduce using rule 76 (comparacion -> exp EQUAL pn_push_operator exp pn_comparison .)
+    RPAREN          reduce using rule 79 (aux_comparacion -> exp EQUAL pn_push_operator exp pn_comparison .)
+    RSQUARE         reduce using rule 79 (aux_comparacion -> exp EQUAL pn_push_operator exp pn_comparison .)
+    COMMA           reduce using rule 79 (aux_comparacion -> exp EQUAL pn_push_operator exp pn_comparison .)
+    SEMICOLON       reduce using rule 79 (aux_comparacion -> exp EQUAL pn_push_operator exp pn_comparison .)
+    TO              reduce using rule 79 (aux_comparacion -> exp EQUAL pn_push_operator exp pn_comparison .)
+    DO              reduce using rule 79 (aux_comparacion -> exp EQUAL pn_push_operator exp pn_comparison .)
+
+
+state 215
 
     (82) exp -> termino pn_addition_substraction PLUS pn_push_operator exp .
 
@@ -3637,7 +3735,7 @@ state 209
     DO              reduce using rule 82 (exp -> termino pn_addition_substraction PLUS pn_push_operator exp .)
 
 
-state 210
+state 216
 
     (83) exp -> termino pn_addition_substraction MINUS pn_push_operator exp .
 
@@ -3654,7 +3752,7 @@ state 210
     DO              reduce using rule 83 (exp -> termino pn_addition_substraction MINUS pn_push_operator exp .)
 
 
-state 211
+state 217
 
     (85) termino -> factor pn_multiplication_division MULT pn_push_operator termino .
 
@@ -3673,7 +3771,7 @@ state 211
     DO              reduce using rule 85 (termino -> factor pn_multiplication_division MULT pn_push_operator termino .)
 
 
-state 212
+state 218
 
     (86) termino -> factor pn_multiplication_division DIV pn_push_operator termino .
 
@@ -3692,7 +3790,7 @@ state 212
     DO              reduce using rule 86 (termino -> factor pn_multiplication_division DIV pn_push_operator termino .)
 
 
-state 213
+state 219
 
     (60) llamada -> ID LPAREN aux_llamada RPAREN SEMICOLON .
 
@@ -3713,37 +3811,37 @@ state 213
     DO              reduce using rule 60 (llamada -> ID LPAREN aux_llamada RPAREN SEMICOLON .)
 
 
-state 214
+state 220
 
     (62) aux_llamada -> expresion COMMA aux_llamada .
 
     RPAREN          reduce using rule 62 (aux_llamada -> expresion COMMA aux_llamada .)
 
 
-state 215
+state 221
 
     (32) aux_escritura -> pn_push_write_operator letrero pn_write COMMA aux_escritura .
 
     RPAREN          reduce using rule 32 (aux_escritura -> pn_push_write_operator letrero pn_write COMMA aux_escritura .)
 
 
-state 216
+state 222
 
     (33) aux_escritura -> pn_push_write_operator expresion pn_write COMMA aux_escritura .
 
     RPAREN          reduce using rule 33 (aux_escritura -> pn_push_write_operator expresion pn_write COMMA aux_escritura .)
 
 
-state 217
+state 223
 
     (51) aux_lectura -> pn_push_read_operator ID pn_push_operand_and_type pn_read dimensiones .
     (53) aux_lectura -> pn_push_read_operator ID pn_push_operand_and_type pn_read dimensiones . COMMA aux_lectura
 
     RPAREN          reduce using rule 51 (aux_lectura -> pn_push_read_operator ID pn_push_operand_and_type pn_read dimensiones .)
-    COMMA           shift and go to state 224
+    COMMA           shift and go to state 233
 
 
-state 218
+state 224
 
     (52) aux_lectura -> pn_push_read_operator ID pn_push_operand_and_type pn_read COMMA . aux_lectura
     (50) aux_lectura -> . pn_push_read_operator ID pn_push_operand_and_type pn_read
@@ -3755,36 +3853,44 @@ state 218
     ID              reduce using rule 106 (pn_push_read_operator -> .)
 
     pn_push_read_operator          shift and go to state 106
-    aux_lectura                    shift and go to state 225
+    aux_lectura                    shift and go to state 234
 
-state 219
+state 225
 
-    (59) decision -> IF LPAREN expresion RPAREN THEN bloque ELSE . bloque
-    (35) bloque -> . LBRACKET estatutos RBRACKET
-    (36) bloque -> . LBRACKET RBRACKET
+    (58) decision -> IF LPAREN expresion pn_if_1 RPAREN THEN bloque . pn_if_2
+    (59) decision -> IF LPAREN expresion pn_if_1 RPAREN THEN bloque . ELSE pn_else bloque pn_if_2
+    (112) pn_if_2 -> .
 
-    LBRACKET        shift and go to state 44
+    ELSE            shift and go to state 236
+    ID              reduce using rule 112 (pn_if_2 -> .)
+    WHILE           reduce using rule 112 (pn_if_2 -> .)
+    WRITE           reduce using rule 112 (pn_if_2 -> .)
+    RETURN          reduce using rule 112 (pn_if_2 -> .)
+    READ            reduce using rule 112 (pn_if_2 -> .)
+    IF              reduce using rule 112 (pn_if_2 -> .)
+    FOR             reduce using rule 112 (pn_if_2 -> .)
+    RBRACKET        reduce using rule 112 (pn_if_2 -> .)
 
-    bloque                         shift and go to state 226
+    pn_if_2                        shift and go to state 235
 
-state 220
+state 226
 
     (63) no_condicional -> FOR ID pn_push_operand_and_type dimensiones ASSIGN pn_push_operator expresion . TO expresion DO bloque
 
-    TO              shift and go to state 227
+    TO              shift and go to state 237
 
 
-state 221
+state 227
 
     (64) no_condicional -> FOR ID pn_push_operand_and_type ASSIGN pn_push_operator expresion TO . expresion DO bloque
     (68) expresion -> . comparacion aux_expresion
     (69) expresion -> . aux_comparacion
-    (74) comparacion -> . exp LESSTHAN exp
-    (75) comparacion -> . exp GREATERTHAN exp
-    (76) comparacion -> . exp EQUAL exp
-    (77) aux_comparacion -> . exp LESSTHAN exp
-    (78) aux_comparacion -> . exp GREATERTHAN exp
-    (79) aux_comparacion -> . exp EQUAL exp
+    (74) comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (75) comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (76) comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
+    (77) aux_comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (78) aux_comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (79) aux_comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
     (80) aux_comparacion -> . exp
     (81) exp -> . termino pn_addition_substraction
     (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
@@ -3811,7 +3917,7 @@ state 221
     CTE_INT         shift and go to state 100
     CTE_FLOAT       shift and go to state 101
 
-    expresion                      shift and go to state 228
+    expresion                      shift and go to state 238
     comparacion                    shift and go to state 90
     aux_comparacion                shift and go to state 91
     exp                            shift and go to state 92
@@ -3820,7 +3926,7 @@ state 221
     var_cte                        shift and go to state 97
     llamada                        shift and go to state 98
 
-state 222
+state 228
 
     (46) asignacion -> ID pn_push_operand_and_type dimensiones ASSIGN pn_push_operator expresion pn_assign SEMICOLON .
 
@@ -3834,7 +3940,7 @@ state 222
     RBRACKET        reduce using rule 46 (asignacion -> ID pn_push_operand_and_type dimensiones ASSIGN pn_push_operator expresion pn_assign SEMICOLON .)
 
 
-state 223
+state 229
 
     (65) dimensiones -> LSQUARE expresion RSQUARE LSQUARE expresion RSQUARE .
 
@@ -3843,7 +3949,55 @@ state 223
     RPAREN          reduce using rule 65 (dimensiones -> LSQUARE expresion RSQUARE LSQUARE expresion RSQUARE .)
 
 
-state 224
+state 230
+
+    (74) comparacion -> exp LESSTHAN pn_push_operator exp . pn_comparison
+    (110) pn_comparison -> .
+
+    AND             reduce using rule 110 (pn_comparison -> .)
+    OR              reduce using rule 110 (pn_comparison -> .)
+    RPAREN          reduce using rule 110 (pn_comparison -> .)
+    RSQUARE         reduce using rule 110 (pn_comparison -> .)
+    COMMA           reduce using rule 110 (pn_comparison -> .)
+    SEMICOLON       reduce using rule 110 (pn_comparison -> .)
+    TO              reduce using rule 110 (pn_comparison -> .)
+    DO              reduce using rule 110 (pn_comparison -> .)
+
+    pn_comparison                  shift and go to state 239
+
+state 231
+
+    (75) comparacion -> exp GREATERTHAN pn_push_operator exp . pn_comparison
+    (110) pn_comparison -> .
+
+    AND             reduce using rule 110 (pn_comparison -> .)
+    OR              reduce using rule 110 (pn_comparison -> .)
+    RPAREN          reduce using rule 110 (pn_comparison -> .)
+    RSQUARE         reduce using rule 110 (pn_comparison -> .)
+    COMMA           reduce using rule 110 (pn_comparison -> .)
+    SEMICOLON       reduce using rule 110 (pn_comparison -> .)
+    TO              reduce using rule 110 (pn_comparison -> .)
+    DO              reduce using rule 110 (pn_comparison -> .)
+
+    pn_comparison                  shift and go to state 240
+
+state 232
+
+    (76) comparacion -> exp EQUAL pn_push_operator exp . pn_comparison
+    (110) pn_comparison -> .
+
+    AND             reduce using rule 110 (pn_comparison -> .)
+    OR              reduce using rule 110 (pn_comparison -> .)
+    RPAREN          reduce using rule 110 (pn_comparison -> .)
+    RSQUARE         reduce using rule 110 (pn_comparison -> .)
+    COMMA           reduce using rule 110 (pn_comparison -> .)
+    SEMICOLON       reduce using rule 110 (pn_comparison -> .)
+    TO              reduce using rule 110 (pn_comparison -> .)
+    DO              reduce using rule 110 (pn_comparison -> .)
+
+    pn_comparison                  shift and go to state 241
+
+state 233
 
     (53) aux_lectura -> pn_push_read_operator ID pn_push_operand_and_type pn_read dimensiones COMMA . aux_lectura
     (50) aux_lectura -> . pn_push_read_operator ID pn_push_operand_and_type pn_read
@@ -3855,40 +4009,49 @@ state 224
     ID              reduce using rule 106 (pn_push_read_operator -> .)
 
     pn_push_read_operator          shift and go to state 106
-    aux_lectura                    shift and go to state 229
+    aux_lectura                    shift and go to state 242
 
-state 225
+state 234
 
     (52) aux_lectura -> pn_push_read_operator ID pn_push_operand_and_type pn_read COMMA aux_lectura .
 
     RPAREN          reduce using rule 52 (aux_lectura -> pn_push_read_operator ID pn_push_operand_and_type pn_read COMMA aux_lectura .)
 
 
-state 226
+state 235
 
-    (59) decision -> IF LPAREN expresion RPAREN THEN bloque ELSE bloque .
+    (58) decision -> IF LPAREN expresion pn_if_1 RPAREN THEN bloque pn_if_2 .
 
-    ID              reduce using rule 59 (decision -> IF LPAREN expresion RPAREN THEN bloque ELSE bloque .)
-    WHILE           reduce using rule 59 (decision -> IF LPAREN expresion RPAREN THEN bloque ELSE bloque .)
-    WRITE           reduce using rule 59 (decision -> IF LPAREN expresion RPAREN THEN bloque ELSE bloque .)
-    RETURN          reduce using rule 59 (decision -> IF LPAREN expresion RPAREN THEN bloque ELSE bloque .)
-    READ            reduce using rule 59 (decision -> IF LPAREN expresion RPAREN THEN bloque ELSE bloque .)
-    IF              reduce using rule 59 (decision -> IF LPAREN expresion RPAREN THEN bloque ELSE bloque .)
-    FOR             reduce using rule 59 (decision -> IF LPAREN expresion RPAREN THEN bloque ELSE bloque .)
-    RBRACKET        reduce using rule 59 (decision -> IF LPAREN expresion RPAREN THEN bloque ELSE bloque .)
+    ID              reduce using rule 58 (decision -> IF LPAREN expresion pn_if_1 RPAREN THEN bloque pn_if_2 .)
+    WHILE           reduce using rule 58 (decision -> IF LPAREN expresion pn_if_1 RPAREN THEN bloque pn_if_2 .)
+    WRITE           reduce using rule 58 (decision -> IF LPAREN expresion pn_if_1 RPAREN THEN bloque pn_if_2 .)
+    RETURN          reduce using rule 58 (decision -> IF LPAREN expresion pn_if_1 RPAREN THEN bloque pn_if_2 .)
+    READ            reduce using rule 58 (decision -> IF LPAREN expresion pn_if_1 RPAREN THEN bloque pn_if_2 .)
+    IF              reduce using rule 58 (decision -> IF LPAREN expresion pn_if_1 RPAREN THEN bloque pn_if_2 .)
+    FOR             reduce using rule 58 (decision -> IF LPAREN expresion pn_if_1 RPAREN THEN bloque pn_if_2 .)
+    RBRACKET        reduce using rule 58 (decision -> IF LPAREN expresion pn_if_1 RPAREN THEN bloque pn_if_2 .)
 
 
-state 227
+state 236
+
+    (59) decision -> IF LPAREN expresion pn_if_1 RPAREN THEN bloque ELSE . pn_else bloque pn_if_2
+    (113) pn_else -> .
+
+    LBRACKET        reduce using rule 113 (pn_else -> .)
+
+    pn_else                        shift and go to state 243
+
+state 237
 
     (63) no_condicional -> FOR ID pn_push_operand_and_type dimensiones ASSIGN pn_push_operator expresion TO . expresion DO bloque
     (68) expresion -> . comparacion aux_expresion
     (69) expresion -> . aux_comparacion
-    (74) comparacion -> . exp LESSTHAN exp
-    (75) comparacion -> . exp GREATERTHAN exp
-    (76) comparacion -> . exp EQUAL exp
-    (77) aux_comparacion -> . exp LESSTHAN exp
-    (78) aux_comparacion -> . exp GREATERTHAN exp
-    (79) aux_comparacion -> . exp EQUAL exp
+    (74) comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (75) comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (76) comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
+    (77) aux_comparacion -> . exp LESSTHAN pn_push_operator exp pn_comparison
+    (78) aux_comparacion -> . exp GREATERTHAN pn_push_operator exp pn_comparison
+    (79) aux_comparacion -> . exp EQUAL pn_push_operator exp pn_comparison
     (80) aux_comparacion -> . exp
     (81) exp -> . termino pn_addition_substraction
     (82) exp -> . termino pn_addition_substraction PLUS pn_push_operator exp
@@ -3915,7 +4078,7 @@ state 227
     CTE_INT         shift and go to state 100
     CTE_FLOAT       shift and go to state 101
 
-    expresion                      shift and go to state 230
+    expresion                      shift and go to state 244
     comparacion                    shift and go to state 90
     aux_comparacion                shift and go to state 91
     exp                            shift and go to state 92
@@ -3924,28 +4087,80 @@ state 227
     var_cte                        shift and go to state 97
     llamada                        shift and go to state 98
 
-state 228
+state 238
 
     (64) no_condicional -> FOR ID pn_push_operand_and_type ASSIGN pn_push_operator expresion TO expresion . DO bloque
 
-    DO              shift and go to state 231
+    DO              shift and go to state 245
 
 
-state 229
+state 239
+
+    (74) comparacion -> exp LESSTHAN pn_push_operator exp pn_comparison .
+
+    AND             reduce using rule 74 (comparacion -> exp LESSTHAN pn_push_operator exp pn_comparison .)
+    OR              reduce using rule 74 (comparacion -> exp LESSTHAN pn_push_operator exp pn_comparison .)
+    RPAREN          reduce using rule 74 (comparacion -> exp LESSTHAN pn_push_operator exp pn_comparison .)
+    RSQUARE         reduce using rule 74 (comparacion -> exp LESSTHAN pn_push_operator exp pn_comparison .)
+    COMMA           reduce using rule 74 (comparacion -> exp LESSTHAN pn_push_operator exp pn_comparison .)
+    SEMICOLON       reduce using rule 74 (comparacion -> exp LESSTHAN pn_push_operator exp pn_comparison .)
+    TO              reduce using rule 74 (comparacion -> exp LESSTHAN pn_push_operator exp pn_comparison .)
+    DO              reduce using rule 74 (comparacion -> exp LESSTHAN pn_push_operator exp pn_comparison .)
+
+
+state 240
+
+    (75) comparacion -> exp GREATERTHAN pn_push_operator exp pn_comparison .
+
+    AND             reduce using rule 75 (comparacion -> exp GREATERTHAN pn_push_operator exp pn_comparison .)
+    OR              reduce using rule 75 (comparacion -> exp GREATERTHAN pn_push_operator exp pn_comparison .)
+    RPAREN          reduce using rule 75 (comparacion -> exp GREATERTHAN pn_push_operator exp pn_comparison .)
+    RSQUARE         reduce using rule 75 (comparacion -> exp GREATERTHAN pn_push_operator exp pn_comparison .)
+    COMMA           reduce using rule 75 (comparacion -> exp GREATERTHAN pn_push_operator exp pn_comparison .)
+    SEMICOLON       reduce using rule 75 (comparacion -> exp GREATERTHAN pn_push_operator exp pn_comparison .)
+    TO              reduce using rule 75 (comparacion -> exp GREATERTHAN pn_push_operator exp pn_comparison .)
+    DO              reduce using rule 75 (comparacion -> exp GREATERTHAN pn_push_operator exp pn_comparison .)
+
+
+state 241
+
+    (76) comparacion -> exp EQUAL pn_push_operator exp pn_comparison .
+
+    AND             reduce using rule 76 (comparacion -> exp EQUAL pn_push_operator exp pn_comparison .)
+    OR              reduce using rule 76 (comparacion -> exp EQUAL pn_push_operator exp pn_comparison .)
+    RPAREN          reduce using rule 76 (comparacion -> exp EQUAL pn_push_operator exp pn_comparison .)
+    RSQUARE         reduce using rule 76 (comparacion -> exp EQUAL pn_push_operator exp pn_comparison .)
+    COMMA           reduce using rule 76 (comparacion -> exp EQUAL pn_push_operator exp pn_comparison .)
+    SEMICOLON       reduce using rule 76 (comparacion -> exp EQUAL pn_push_operator exp pn_comparison .)
+    TO              reduce using rule 76 (comparacion -> exp EQUAL pn_push_operator exp pn_comparison .)
+    DO              reduce using rule 76 (comparacion -> exp EQUAL pn_push_operator exp pn_comparison .)
+
+
+state 242
 
     (53) aux_lectura -> pn_push_read_operator ID pn_push_operand_and_type pn_read dimensiones COMMA aux_lectura .
 
     RPAREN          reduce using rule 53 (aux_lectura -> pn_push_read_operator ID pn_push_operand_and_type pn_read dimensiones COMMA aux_lectura .)
 
 
-state 230
+state 243
+
+    (59) decision -> IF LPAREN expresion pn_if_1 RPAREN THEN bloque ELSE pn_else . bloque pn_if_2
+    (35) bloque -> . LBRACKET estatutos RBRACKET
+    (36) bloque -> . LBRACKET RBRACKET
+
+    LBRACKET        shift and go to state 44
+
+    bloque                         shift and go to state 246
+
+state 244
 
     (63) no_condicional -> FOR ID pn_push_operand_and_type dimensiones ASSIGN pn_push_operator expresion TO expresion . DO bloque
 
-    DO              shift and go to state 232
+    DO              shift and go to state 247
 
 
-state 231
+state 245
 
     (64) no_condicional -> FOR ID pn_push_operand_and_type ASSIGN pn_push_operator expresion TO expresion DO . bloque
     (35) bloque -> . LBRACKET estatutos RBRACKET
@@ -3953,9 +4168,25 @@ state 231
 
     LBRACKET        shift and go to state 44
 
-    bloque                         shift and go to state 233
+    bloque                         shift and go to state 248
 
-state 232
+state 246
+
+    (59) decision -> IF LPAREN expresion pn_if_1 RPAREN THEN bloque ELSE pn_else bloque . pn_if_2
+    (112) pn_if_2 -> .
+
+    ID              reduce using rule 112 (pn_if_2 -> .)
+    WHILE           reduce using rule 112 (pn_if_2 -> .)
+    WRITE           reduce using rule 112 (pn_if_2 -> .)
+    RETURN          reduce using rule 112 (pn_if_2 -> .)
+    READ            reduce using rule 112 (pn_if_2 -> .)
+    IF              reduce using rule 112 (pn_if_2 -> .)
+    FOR             reduce using rule 112 (pn_if_2 -> .)
+    RBRACKET        reduce using rule 112 (pn_if_2 -> .)
+
+    pn_if_2                        shift and go to state 249
+
+state 247
 
     (63) no_condicional -> FOR ID pn_push_operand_and_type dimensiones ASSIGN pn_push_operator expresion TO expresion DO . bloque
     (35) bloque -> . LBRACKET estatutos RBRACKET
@@ -3963,9 +4194,9 @@ state 232
 
     LBRACKET        shift and go to state 44
 
-    bloque                         shift and go to state 234
+    bloque                         shift and go to state 250
 
-state 233
+state 248
 
     (64) no_condicional -> FOR ID pn_push_operand_and_type ASSIGN pn_push_operator expresion TO expresion DO bloque .
 
@@ -3979,7 +4210,21 @@ state 233
     RBRACKET        reduce using rule 64 (no_condicional -> FOR ID pn_push_operand_and_type ASSIGN pn_push_operator expresion TO expresion DO bloque .)
 
 
-state 234
+state 249
+
+    (59) decision -> IF LPAREN expresion pn_if_1 RPAREN THEN bloque ELSE pn_else bloque pn_if_2 .
+
+    ID              reduce using rule 59 (decision -> IF LPAREN expresion pn_if_1 RPAREN THEN bloque ELSE pn_else bloque pn_if_2 .)
+    WHILE           reduce using rule 59 (decision -> IF LPAREN expresion pn_if_1 RPAREN THEN bloque ELSE pn_else bloque pn_if_2 .)
+    WRITE           reduce using rule 59 (decision -> IF LPAREN expresion pn_if_1 RPAREN THEN bloque ELSE pn_else bloque pn_if_2 .)
+    RETURN          reduce using rule 59 (decision -> IF LPAREN expresion pn_if_1 RPAREN THEN bloque ELSE pn_else bloque pn_if_2 .)
+    READ            reduce using rule 59 (decision -> IF LPAREN expresion pn_if_1 RPAREN THEN bloque ELSE pn_else bloque pn_if_2 .)
+    IF              reduce using rule 59 (decision -> IF LPAREN expresion pn_if_1 RPAREN THEN bloque ELSE pn_else bloque pn_if_2 .)
+    FOR             reduce using rule 59 (decision -> IF LPAREN expresion pn_if_1 RPAREN THEN bloque ELSE pn_else bloque pn_if_2 .)
+    RBRACKET        reduce using rule 59 (decision -> IF LPAREN expresion pn_if_1 RPAREN THEN bloque ELSE pn_else bloque pn_if_2 .)
+
+
+state 250
 
     (63) no_condicional -> FOR ID pn_push_operand_and_type dimensiones ASSIGN pn_push_operator expresion TO expresion DO bloque .
 

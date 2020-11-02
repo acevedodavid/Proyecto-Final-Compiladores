@@ -13,6 +13,8 @@ import sys
 import cuboSemantico
 import tablaVariables
 
+# To Do
+# Por que se inicializa asi?
 quadruples = [['GOTO',None,None,0]]
 
 symbols = {
@@ -44,6 +46,7 @@ current_var = ''
 stack_operands = [] # stack that keeps the operands before they are located in a quadruple (PilaO)
 stack_operators = [] # stack for operators (precedenece) (POper)
 stack_types = [] # stack that keeps track of the type every operand has; moves together with the stack for operands
+stack_jumps = []
 
 # Sets of available variables (used to check if variable already exists)
 set_var_global = set()
@@ -187,9 +190,10 @@ def p_program(p):
     print("fin programa")
     print("")
     print("Quadruples")
-    counter = 1
+    counter = 0
     for q in quadruples:
-        print(q)
+        print(str(counter) + ". " + str(q))
+        counter += 1
 
 def p_main(p):
     '''main : MAIN pn_current_function LPAREN RPAREN vars bloque
@@ -313,16 +317,8 @@ def p_aux_letrero(p):
 
 
 def p_decision(p):
-    '''decision : IF LPAREN expresion RPAREN THEN bloque
-                | IF LPAREN expresion RPAREN THEN bloque ELSE bloque'''
-    exp_Type = list_tipo_variables.pop()
-    if exp_Type != 'bool' :
-        print("Error de tipo")
-        sys.exit()
-    else :
-        result = list_nombre_variables.pop()
-        quad = ["GOTOF", result, None, "resultado_salto"]
-        quadruples.append(quad)
+    '''decision : IF LPAREN expresion pn_if_1 RPAREN THEN bloque pn_if_2
+                | IF LPAREN expresion pn_if_1 RPAREN THEN bloque ELSE pn_else bloque pn_if_2'''
 
 def p_llamada(p):
     'llamada : ID LPAREN aux_llamada RPAREN SEMICOLON'
@@ -357,15 +353,15 @@ def p_aux_expresion(p):
 
 
 def p_comparacion(p):
-    '''comparacion : exp LESSTHAN exp
-                   | exp GREATERTHAN exp
-                   | exp EQUAL exp'''
+    '''comparacion : exp LESSTHAN pn_push_operator exp pn_comparison
+                   | exp GREATERTHAN pn_push_operator exp pn_comparison
+                   | exp EQUAL pn_push_operator exp pn_comparison'''
 
 
 def p_aux_comparacion(p):
-    '''aux_comparacion : exp LESSTHAN exp
-                       | exp GREATERTHAN exp
-                       | exp EQUAL exp
+    '''aux_comparacion : exp LESSTHAN pn_push_operator exp pn_comparison
+                       | exp GREATERTHAN pn_push_operator exp pn_comparison
+                       | exp EQUAL pn_push_operator exp pn_comparison
                        | exp'''
 
 
@@ -481,7 +477,7 @@ def p_pn_push_constant_and_type(p):
 # Push variable name and type to the respective stacks when it is used
 def p_pn_push_operand_and_type(p):
     'pn_push_operand_and_type : '
-    print(p[-1])
+    #print(p[-1])
     #print("\npush_operand_and_type")
     global symbols, current_function, stack_var_names, stack_var_types
     if(symbols[current_function]['vars'].get(p[-1]) is not None):
@@ -497,7 +493,7 @@ def p_pn_push_operand_and_type(p):
         print("Variable not defined")
         sys.exit()
     #print(p[-1])
-    print(stack_operands)
+    #print(stack_operands)
     #print(stack_operators)
 
 def p_pn_push_operator(p):
@@ -570,7 +566,7 @@ def p_pn_multiplication_division(p):
 def p_pn_assign(p):
     'pn_assign : '
     #print("\npn_assign")
-    global stack_operators, stack_operands, stack_types, nextTemp
+    global stack_operators, stack_operands, stack_types, quadruples, nextTemp
     #print(stack_operands)
     #print(stack_types)
     #print(stack_operators)
@@ -623,7 +619,6 @@ def p_pn_write(p):
     'pn_write : '
     if (len(stack_operators) > 0):
         if (stack_operators[-1] == 'write'):
-            print("entre write")
             operand = stack_operands.pop()
             type = stack_types.pop()
             operator = stack_operators.pop()
@@ -632,6 +627,65 @@ def p_pn_write(p):
             quadruples.append(quad)
 
 # decision
+def p_pn_comparison(p):
+    'pn_comparison : '
+    global stack_operands, stack_types, stack_operators, quadruples, nextTemp
+    if (len(stack_operators) > 0):
+        if (stack_operators[-1] == '<' or stack_operators[-1] == '>' or stack_operators[-1] == '=='):
+            right_operand = stack_operands.pop()
+            right_type = stack_types.pop()
+            left_operand = stack_operands.pop()
+            left_type = stack_types.pop()
+            operator = stack_operators.pop()
+
+            result_type = cuboSemantico.typeOperator[left_type][right_type][operator]
+            print(left_type)
+            print(right_type)
+            print(operator)
+            print(result_type)
+            if result_type is not None :
+                result = 't' + str(nextTemp)
+                quad = [operator,left_operand,right_operand,result]
+                quadruples.append(quad)
+                stack_operands.append(result)
+                stack_types.append(result_type)
+                nextTemp += 1
+            else:
+                # To Do
+                # Hacer mas especifico este error
+                print("Error en comparacion")
+                sys.exit()
+
+def p_pn_if_1(p):
+    'pn_if_1 : '
+    global stack_operands, stack_types, quadruples, stack_jumps
+    print(stack_operands)
+    print(stack_types)
+    result = stack_operands.pop()
+    result_type = stack_types.pop()
+    if (result_type == 'bool'):
+        quad = ['GOTOF',result,None,'.pending_jump']
+        quadruples.append(quad)
+        stack_jumps.append(len(quadruples)-1)
+
+    else:
+        # To Do
+        # Hacer mas especifico este error
+        print("La expresion no es de tipo bool en la decision")
+        sys.exit()
+
+def p_pn_if_2(p):
+    'pn_if_2 : '
+    global stack_jumps, quadruples
+    endOfDecision = stack_jumps.pop()
+    fill(endOfDecision,len(quadruples))
+
+def p_pn_else(p):
+    'pn_else : '
+    global stack_jumps, quadruples
+    endOfElse = stack_jumps.pop()
+    stack_jumps.append(len(quadruples)-1)
+    fill(endOfElse,len(quadruples))
 
 
 # retorno
@@ -640,6 +694,12 @@ def p_pn_write(p):
 # no_condicional (FOR)
 
 
+
+# Auxiliary functions
+
+def fill(quad_number, jumpTo): #quad_number = int, jumpTo = int
+    global quadruples
+    quadruples[quad_number][3] = jumpTo
 
 parser = yacc.yacc()
 
