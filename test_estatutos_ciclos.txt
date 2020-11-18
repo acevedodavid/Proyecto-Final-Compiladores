@@ -28,4 +28,6 @@ var int : suma, aquiSalgoFor, aquiSalgoWhile;
   {
     write(suma);
   }
+
+  miFuncion();
 }

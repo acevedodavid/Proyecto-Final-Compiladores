@@ -1,0 +1,28 @@
+program testAritmetica;
+
+var int : i,j;
+
+void module uno(int a)
+var int : k;
+{
+  k = a * 2;
+  if (k < a + 4) then
+  {
+    uno(a + 1);
+  }
+  write(k);
+}
+
+int module dos(int b)
+{
+  b = b * i + j;
+  return(b*2);
+}
+
+main()
+{
+  i = 2;
+  j = i * 2 - 1;
+  uno(j);
+  write(i + dos(i + j));
+}

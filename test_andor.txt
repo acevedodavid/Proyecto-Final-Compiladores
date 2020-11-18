@@ -1,0 +1,27 @@
+program testAritmetica;
+
+var int : i, j; float : myFloat;
+
+void module miFuncion()
+{}
+
+main()
+var int : suma, resta, fromRead;
+{
+  i = 20;
+  j = 10;
+  suma = i + j;
+  if (suma > 10 & resta < 10) then
+  {
+    write(suma);
+  }
+
+  if (suma == 10 | resta == 10) then
+  {
+    write(suma);
+  }
+  else
+  {
+    suma = i - j;
+  }
+}

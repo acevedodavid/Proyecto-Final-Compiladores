@@ -6,6 +6,7 @@
 
 # To Do
 # Corregir que guarde cuando se introducen matrices
+# Agregar cuadruplos funciones
 
 import lex
 import yacc
@@ -208,29 +209,34 @@ def p_funcion(p):
                | tipo_retorno MODULE ID pn_add_function LPAREN parametros RPAREN bloque
                | tipo_retorno MODULE ID pn_add_function LPAREN RPAREN vars bloque
                | tipo_retorno MODULE ID pn_add_function LPAREN RPAREN bloque'''
+    print("termino funcion")
 
 
 def p_vars(p):
     'vars : VAR var'
-
+    print("termino vars")
 
 def p_var(p):
     '''var : tipo COLON lista_ids SEMICOLON
            | tipo COLON lista_ids SEMICOLON var'''
+    print("termino var")
 
 def p_tipo_retorno(p):
     '''tipo_retorno : tipo
                     | VOID pn_current_type'''
+    print("termino tipo_retorno")
 
 def p_tipo(p):
     '''tipo : INT pn_current_type
           | FLOAT pn_current_type
           | CHAR pn_current_type'''
+    print("termino tipo")
 
 
 def p_parametros(p):
-    '''parametros : tipo ID
-                  | tipo ID COMMA parametros'''
+    '''parametros : tipo ID pn_add_parameter
+                  | tipo ID pn_add_parameter COMMA parametros'''
+    print("termino parametros")
 
 
 def p_lista_ids(p):
@@ -250,6 +256,7 @@ def p_aux_lista(p):
 
 def p_escritura(p):
     'escritura : WRITE LPAREN aux_escritura RPAREN SEMICOLON'
+    print("termino escritura")
 
 
 def p_aux_escritura(p):
@@ -257,20 +264,24 @@ def p_aux_escritura(p):
                      | pn_push_write_operator expresion pn_write
                      | pn_push_write_operator letrero pn_write COMMA aux_escritura
                      | pn_push_write_operator expresion pn_write COMMA aux_escritura'''
+    print("termino aux_escritura")
 
 
 def p_condicional(p):
     'condicional : WHILE pn_while_1 LPAREN expresion pn_while_2 RPAREN DO bloque pn_while_3'
+    print("termino condicional")
 
 
 def p_bloque(p):
     '''bloque : LBRACKET estatutos RBRACKET
               | LBRACKET RBRACKET'''
+    print("termino bloque")
 
 
 def p_estatutos(p):
     '''estatutos : estatuto estatutos
                   | estatuto'''
+    print("termino estatuto")
 
 
 def p_estatuto(p):
@@ -280,20 +291,24 @@ def p_estatuto(p):
                 | retorno
                 | lectura
                 | decision
-                | no_condicional'''
+                | no_condicional
+                | llamada SEMICOLON'''
+    print("termino estatuto")
 
 
 def p_asignacion(p):
     '''asignacion : ID pn_push_operand_and_type dimensiones ASSIGN pn_push_operator expresion pn_assign SEMICOLON
                   | ID pn_push_operand_and_type ASSIGN pn_push_operator expresion pn_assign SEMICOLON'''
-
+    print("termino asgignacion")
 
 def p_retorno(p):
-    'retorno : RETURN LPAREN expresion RPAREN'
+    'retorno : RETURN pn_push_operator LPAREN expresion pn_retorno RPAREN SEMICOLON'
+    print("termino retorno")
 
 
 def p_lectura(p):
     'lectura : READ LPAREN aux_lectura RPAREN SEMICOLON'
+    print("termino lectura")
 
 
 # To Do
@@ -319,12 +334,13 @@ def p_decision(p):
                 | IF LPAREN expresion pn_if_1 RPAREN THEN bloque ELSE pn_else bloque pn_if_2'''
 
 def p_llamada(p):
-    'llamada : ID LPAREN aux_llamada RPAREN SEMICOLON'
-
+    'llamada : ID LPAREN aux_llamada RPAREN'
+    print("termino llamada")
 
 def p_aux_llamada(p):
     '''aux_llamada : expresion
                    | expresion COMMA aux_llamada'''
+    print("termino aux_llamada")
 
 
 def p_no_condicional(p):
@@ -341,19 +357,20 @@ def p_dimensiones(p):
 def p_expresion(p):
     '''expresion : comparacion aux_expresion
                  | aux_comparacion'''
-
+    print("termino expresion")
 
 def p_aux_expresion(p):
-    '''aux_expresion : AND comparacion
-                     | OR comparacion
-                     | AND comparacion aux_expresion
-                     | OR comparacion aux_expresion'''
-
+    '''aux_expresion : AND pn_push_operator comparacion pn_and
+                     | OR pn_push_operator comparacion pn_or
+                     | AND pn_push_operator comparacion pn_and aux_expresion
+                     | OR pn_push_operator comparacion pn_or aux_expresion'''
+    print("termino aux_expresion")
 
 def p_comparacion(p):
     '''comparacion : exp LESSTHAN pn_push_operator exp pn_comparison
                    | exp GREATERTHAN pn_push_operator exp pn_comparison
                    | exp EQUAL pn_push_operator exp pn_comparison'''
+    print("termino comparacion")
 
 
 def p_aux_comparacion(p):
@@ -367,6 +384,7 @@ def p_exp(p):
     '''exp : termino pn_addition_substraction
            | termino pn_addition_substraction PLUS pn_push_operator exp
            | termino pn_addition_substraction MINUS pn_push_operator exp'''
+    print("termino exp")
 
 
 def p_termino(p):
@@ -389,8 +407,14 @@ def p_var_cte(p):
     '''var_cte : ID pn_push_operand_and_type
                | CTE_INT pn_push_constant_and_type
                | CTE_FLOAT pn_push_constant_and_type'''
+    print("termino var_cte")
 
 def p_error(p):
+    print(p)
+    counter = 0
+    for q in quadruples:
+        print(str(counter) + ". " + str(q))
+        counter += 1
     print("Error de sintaxis en '%s'" % p.value)
     sys.exit()
 
@@ -487,40 +511,48 @@ def p_pn_push_constant_and_type(p):
 def p_pn_push_operand_and_type(p):
     'pn_push_operand_and_type : '
     #print(p[-1])
-    #print("\npush_operand_and_type")
+    print("\npush_operand_and_type")
     global symbols, current_function, stack_var_names, stack_var_types, current_type, current_var
+    #print(p[-1])
+    #print(symbols)
     if(symbols[current_function]['vars'].get(p[-1]) is not None):
+        #print("entre 1")
         stack_operands.append(symbols[current_function]['vars'].get(p[-1])['name'])
         stack_types.append(symbols[current_function]['vars'].get(p[-1])['type'])
         current_var = symbols[current_function]['vars'].get(p[-1])['name']
         current_type = symbols[current_function]['vars'].get(p[-1])['type']
     elif(symbols['global']['vars'].get(p[-1]) is not None):
+        #print("entre 2")
         stack_operands.append(symbols['global']['vars'].get(p[-1])['name'])
         stack_types.append(symbols['global']['vars'].get(p[-1])['type'])
         current_var = symbols['global']['vars'].get(p[-1])['name']
         current_type = symbols['global']['vars'].get(p[-1])['type']
-    elif(symbols[current_function]['params'].get(p[-1]) is not None):
-        stack_operands.append(symbols[current_function]['params'].get(p[-1])['name'])
-        stack_types.append(symbols[current_function]['params'].get(p[-1])['type'])
-        current_var = symbols[current_function]['params'].get(p[-1])['name']
-        current_type = symbols[current_function]['params'].get(p[-1])['type']
+    elif(symbols[current_function]['param'].get(p[-1]) is not None):
+        #print("entre 3")
+        stack_operands.append(symbols[current_function]['param'].get(p[-1])['name'])
+        stack_types.append(symbols[current_function]['param'].get(p[-1])['type'])
+        current_var = symbols[current_function]['param'].get(p[-1])['name']
+        current_type = symbols[current_function]['param'].get(p[-1])['type']
     else :
         print("Variable not defined")
         sys.exit()
     #print(p[-1])
-    #print(stack_operands)
-    #print(stack_operators)
+    print(stack_operands)
+    print(stack_operators)
+    #print("termine :)")
 
 def p_pn_push_operator(p):
     'pn_push_operator : '
-    #print("\npush_operator")
+    print("\npush_operator")
     stack_operators.append(p[-1])
+    #print(stack_operators)
+    #print(symbols)
 
 ## PN aritmetica
 
 def p_pn_addition_substraction(p):
     'pn_addition_substraction : '
-    #print("\npn_addition_substraction")
+    print("\npn_addition_substraction")
     global stack_operators, stack_operands, nextTemp
     #print(stack_operands)
     #print(stack_operators)
@@ -580,7 +612,7 @@ def p_pn_multiplication_division(p):
 
 def p_pn_assign(p):
     'pn_assign : '
-    #print("\npn_assign")
+    print("\npn_assign")
     global stack_operators, stack_operands, stack_types, quadruples, nextTemp
     #print(stack_operands)
     #print(stack_types)
@@ -597,12 +629,12 @@ def p_pn_assign(p):
             result_type = cuboSemantico.typeOperator[left_type][right_type][operator]
 
             if result_type is not None :
-                result = 't' + str(nextTemp)
+                #result = 't' + str(nextTemp)
                 quad = [operator,right_operand,None,left_operand]
                 quadruples.append(quad)
-                stack_operands.append(result)
-                stack_types.append(result_type)
-                nextTemp += 1
+                #stack_operands.append(result)
+                #stack_types.append(result_type)
+                #nextTemp += 1
             else:
                 # To Do
                 # Hacer mas especifico este error
@@ -642,6 +674,72 @@ def p_pn_write(p):
 
             quad = [operator,None,None,operand]
             quadruples.append(quad)
+
+# comparacion
+def p_pn_and(p):
+    'pn_and :'
+    global stack_operators, stack_operands, nextTemp, stack_types
+    #print("\n pn_and")
+    #print(stack_operators)
+    ##print(stack_operands)
+    #print(stack_types)
+    if (len(stack_operators) > 0):
+        if (stack_operators[-1] == '&'):
+            right_operand = stack_operands.pop()
+            right_type = stack_types.pop()
+            left_operand = stack_operands.pop()
+            left_type = stack_types.pop()
+            operator = stack_operators.pop()
+
+            result_type = cuboSemantico.typeOperator[left_type][right_type][operator]
+
+            if result_type is not None :
+                #print("entre")
+                #print(result_type)
+                result = 't' + str(nextTemp)
+                quad = [operator,left_operand,right_operand,result]
+                quadruples.append(quad)
+                stack_operands.append(result)
+                stack_types.append(result_type)
+                nextTemp += 1
+                #print("termino if")
+            else:
+                # To Do
+                # Hacer mas especifico este error
+                print("Error en asginacion")
+                sys.exit()
+    #print("termino pn_and")
+
+
+def p_pn_or(p):
+    'pn_or : '
+    global stack_operators, stack_operands, nextTemp, stack_types
+    #print("\n pn_or")
+    #print(stack_operators)
+    #print(stack_operands)
+    #print(stack_types)
+    if (len(stack_operators) > 0):
+        if (stack_operators[-1] == '|'):
+            right_operand = stack_operands.pop()
+            right_type = stack_types.pop()
+            left_operand = stack_operands.pop()
+            left_type = stack_types.pop()
+            operator = stack_operators.pop()
+
+            result_type = cuboSemantico.typeOperator[left_type][right_type][operator]
+
+            if result_type is not None :
+                result = 't' + str(nextTemp)
+                quad = [operator,left_operand,right_operand,result]
+                quadruples.append(quad)
+                stack_operands.append(result)
+                stack_types.append(result_type)
+                nextTemp += 1
+            else:
+                # To Do
+                # Hacer mas especifico este error
+                print("Error en asginacion")
+                sys.exit()
 
 # decision
 def p_pn_comparison(p):
@@ -707,12 +805,12 @@ def p_pn_else(p):
 # condicional (WHILE)
 def p_pn_while_1(p):
     'pn_while_1 : '
-    print('pn_while_1')
+    #print('pn_while_1')
     stack_jumps.append(len(quadruples))
 
 def p_pn_while_2(p):
     'pn_while_2 : '
-    print('pn_while_1')
+    #print('pn_while_1')
     result = stack_operands.pop()
     result_type = stack_types.pop()
     if (result_type == 'bool'):
@@ -801,8 +899,39 @@ def p_pn_add_function(p):
         print("Error: Function has already been declared")
         sys.exit()
 
-# retorno
+def p_pn_add_parameter(p):
+    'pn_add_parameter : '
+    print("\nadd_parameter")
+    global symbols, current_function, current_type
+    print(p[-1])
+    print(current_type)
+    if (symbols['global']['vars'].get(p[-1]) is None):
+        symbols[current_function]['param'][p[-1]] = {
+            'name': p[-1],
+            'type': current_type
+        }
+    else:
+        print("Error in function parameters declaration")
+        sys.exit()
 
+# retorno
+def p_pn_retorno(p):
+    'pn_retorno :'
+    global stack_operators, stack_operands, nextTemp, stack_types, current_function
+    if (len(stack_operators) > 0):
+        if (stack_operators[-1] == 'return'):
+            right_operand = stack_operands.pop()
+            right_type = stack_types.pop()
+            operator = stack_operators.pop()
+
+            if (right_type == symbols[current_function]['return_type']):
+                quad = [operator,None,None,right_operand]
+                quadruples.append(quad)
+            else:
+                # To Do
+                # Hacer mas especifico este error
+                print("La expresion no es de tipo bool en while")
+                sys.exit()
 
 # Auxiliary functions
 
