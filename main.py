@@ -6,7 +6,7 @@
 
 # To Do
 # Corregir que guarde cuando se introducen matrices
-# Agregar cuadruplos funciones
+# Maquina virtual
 
 import lex
 import yacc
@@ -14,8 +14,6 @@ import sys
 import cuboSemantico
 import tablaVariables
 
-# To Do
-# Por que se inicializa asi?
 quadruples = [['GOTO',None,None,0]]
 
 symbols = {
@@ -23,20 +21,37 @@ symbols = {
         'param': {
         },
         'vars': {
+        },
+        'count': {
+            'int': 0,
+            'float': 0,
+            'char': 0,
+            'bool': 0
         }
     },
     'main': {
         'param': {
         },
         'vars': {
+        },
+        'count': {
+            'int': 0,
+            'float': 0,
+            'char': 0,
+            'bool': 0
         }
     }
 }
 
-constants = {}
-temps = {}
-nextConst = 1
-nextTemp = 1
+constants = {
+    'count': {
+        'int': 0,
+        'float': 0,
+        'char': 0,
+        'bool': 0
+    },
+    'data': {}
+}
 
 # Aux variables to keep track of current data
 current_function = 'global'
@@ -56,6 +71,26 @@ stack_jumps = []
 set_var_global = set()
 set_var_main = set()
 set_var_function = set()
+
+# Addresses bases
+const_b = 0
+global_b = 100000
+local_b = 200000
+
+mem_size = 10000
+int_b = 0
+float_b = 10000
+char_b = 20000
+bool_b = 30000
+
+# These are reset everytime we start processing a new function
+int_counter = 0
+float_counter = 0
+char_counter = 0
+bool_counter = 0
+
+# These are saved through the whole execution, as there may be constants anywhere
+cte_counter = 0
 
 # Lexer
 
@@ -424,10 +459,72 @@ def p_error(p):
 
 # Puntos Neuralgicos (PN)
 
+def resetCounters():
+    global int_counter, float_counter, char_counter, bool_counter
+    int_counter = 0
+    float_counter = 0
+    char_counter = 0
+    bool_counter = 0
+
+# Get next address for variable
+def nextAddress(var_type):
+    global global_b, local_b
+    global int_b, float_b, char_b, mem_size
+    global int_counter, float_counter, char_counter, bool_counter
+
+    if (int_counter >= mem_size or float_counter >= mem_size or char_counter >= mem_size or bool_counter >= mem_size):
+        print("Error, no hay espacio de memoria suficiente")
+        sys.exit()
+
+    result = 0
+
+    # sumar la base de
+    if (current_function == 'global'):
+        result += global_b
+    else:
+        result += local_b
+
+    if (var_type == 'int'):
+        result += int_b
+        result += int_counter
+        int_counter += 1
+    elif (var_type == 'float'):
+        result += float_b
+        result += float_counter
+        float_counter += 1
+    elif (var_type == 'char'):
+        result += char_b
+        result += char_counter
+        char_counter += 1
+    elif (var_type == 'bool'):
+        result += bool_b
+        result += bool_counter
+        bool_counter += 1
+    else:
+        print(var_type)
+        print("Error: se recibio una variable de un tipo no valido")
+        sys.exit()
+
+    #print(result)
+    return result
+
+def nextCteAddress():
+    global mem_size, cte_counter
+    if (cte_counter >= mem_size):
+        print("Error, no hay espacio de memoria suficiente")
+        sys.exit()
+
+    result = const_b
+    result += cte_counter
+    cte_counter += 1
+    #print(result)
+    return result
+
 # Update current function
 def p_pn_current_function(p):
     'pn_current_function : '
     global current_function, current_param_count, current_func_var_count
+    resetCounters()
     current_function = p[-1]
     current_param_count = 0
     current_func_var_count = 0
@@ -462,6 +559,7 @@ def p_pn_add_symbol(p):
                 sys.exit()
             else :
                 set_var_global.add(p[-1])
+
         elif (current_function == 'main'):
             if (p[-1] in set_var_global) :
                 print("Variable has already been declared globally")
@@ -484,35 +582,37 @@ def p_pn_add_symbol(p):
                 set_var_function.add(tuple((current_function,p[-1])))
 
         current_func_var_count += 1
+
         symbols[current_function]['vars'][p[-1]] = {
             'name': p[-1],
+            'address': nextAddress(current_type),
             'type': current_type
         }
+        symbols[current_function]['count'][current_type] += 1
         #print(p[-1])
     else :
         print("Error: variable ya habia sido declarada")
 
+
 # Push constant name and type to the respective stacks when it is used
 def p_pn_push_constant_and_type(p):
     'pn_push_constant_and_type : '
-    global nextConst
+    global constants, cte_counter
     #print("\npush_constant_and_type")
-    stack_operands.append('c' + str(nextConst))
-    stack_types.append('int')
-    nextConst += 1
-    # To Do
-    # Agregar nombres a las constantes
-
-    #global constants
-    #cName = 'c'
-    #print(cName)
-    #constants[cName] = {
-    #    'value': p[-1],
-    #    'type': type(p[-1])
-    #}
-    #stack_operands.append(cName)
-    #stack_types.append(type(p[-1]))
-    #nextConst += 1
+    cte_address = 0
+    cte_type = type(p[-1]).__name__
+    if (constants['data'].get(p[-1]) is None):
+        cte_address = nextCteAddress()
+        constants['data'][p[-1]] = {
+            'address': cte_address,
+            'type': cte_type
+        }
+        constants['count'][cte_type] += 1
+    else:
+        cte_address = constants['data'][p[-1]]['address']
+    #print(cte_address)
+    stack_operands.append(cte_address)
+    stack_types.append(cte_type)
 
 # Push variable name and type to the respective stacks when it is used
 def p_pn_push_operand_and_type(p):
@@ -524,19 +624,19 @@ def p_pn_push_operand_and_type(p):
     #print(symbols)
     if(symbols[current_function]['vars'].get(p[-1]) is not None):
         #print("entre 1")
-        stack_operands.append(symbols[current_function]['vars'].get(p[-1])['name'])
+        stack_operands.append(symbols[current_function]['vars'].get(p[-1])['address'])
         stack_types.append(symbols[current_function]['vars'].get(p[-1])['type'])
         current_var = symbols[current_function]['vars'].get(p[-1])['name']
         current_type = symbols[current_function]['vars'].get(p[-1])['type']
     elif(symbols['global']['vars'].get(p[-1]) is not None):
         #print("entre 2")
-        stack_operands.append(symbols['global']['vars'].get(p[-1])['name'])
+        stack_operands.append(symbols['global']['vars'].get(p[-1])['address'])
         stack_types.append(symbols['global']['vars'].get(p[-1])['type'])
         current_var = symbols['global']['vars'].get(p[-1])['name']
         current_type = symbols['global']['vars'].get(p[-1])['type']
     elif(symbols[current_function]['param'].get(p[-1]) is not None):
         #print("entre 3")
-        stack_operands.append(symbols[current_function]['param'].get(p[-1])['name'])
+        stack_operands.append(symbols[current_function]['param'].get(p[-1])['address'])
         stack_types.append(symbols[current_function]['param'].get(p[-1])['type'])
         current_var = symbols[current_function]['param'].get(p[-1])['name']
         current_type = symbols[current_function]['param'].get(p[-1])['type']
@@ -560,7 +660,7 @@ def p_pn_push_operator(p):
 def p_pn_addition_substraction(p):
     'pn_addition_substraction : '
     #print("\npn_addition_substraction")
-    global stack_operators, stack_operands, nextTemp
+    global stack_operators, stack_operands
     #print(stack_operands)
     #print(stack_operators)
     if (len(stack_operators) > 0):
@@ -574,12 +674,12 @@ def p_pn_addition_substraction(p):
             result_type = cuboSemantico.typeOperator[left_type][right_type][operator]
 
             if result_type is not None :
-                result = 't' + str(nextTemp)
+                result = nextAddress(result_type)
+                symbols[current_function]['count'][result_type] += 1
                 quad = [operator,left_operand,right_operand,result]
                 quadruples.append(quad)
                 stack_operands.append(result)
                 stack_types.append(result_type)
-                nextTemp += 1
             else:
                 # To Do
                 # Hacer mas especifico este error
@@ -589,7 +689,7 @@ def p_pn_addition_substraction(p):
 def p_pn_multiplication_division(p):
     'pn_multiplication_division : '
     #print("\npn_multiplication_division")
-    global stack_operators, stack_operands, nextTemp
+    global stack_operators, stack_operands
     #print(stack_operands)
     #print(stack_operators)
     if (len(stack_operators) > 0):
@@ -603,12 +703,12 @@ def p_pn_multiplication_division(p):
             result_type = cuboSemantico.typeOperator[left_type][right_type][operator]
 
             if result_type is not None :
-                result = 't' + str(nextTemp)
+                result = nextAddress(result_type)
+                symbols[current_function]['count'][result_type] += 1
                 quad = [operator,left_operand,right_operand,result]
                 quadruples.append(quad)
                 stack_operands.append(result)
                 stack_types.append(result_type)
-                nextTemp += 1
             else:
                 # To Do
                 # Hacer mas especifico este error
@@ -620,7 +720,7 @@ def p_pn_multiplication_division(p):
 def p_pn_assign(p):
     'pn_assign : '
     #print("\npn_assign")
-    global stack_operators, stack_operands, stack_types, quadruples, nextTemp
+    global stack_operators, stack_operands, stack_types, quadruples
     #print(stack_operands)
     #print(stack_types)
     #print(stack_operators)
@@ -636,12 +736,10 @@ def p_pn_assign(p):
             result_type = cuboSemantico.typeOperator[left_type][right_type][operator]
 
             if result_type is not None :
-                #result = 't' + str(nextTemp)
                 quad = [operator,right_operand,None,left_operand]
                 quadruples.append(quad)
                 #stack_operands.append(result)
                 #stack_types.append(result_type)
-                #nextTemp += 1
             else:
                 # To Do
                 # Hacer mas especifico este error
@@ -658,7 +756,7 @@ def p_pn_read(p):
     if (len(stack_operators) > 0):
         if (stack_operators[-1] == 'read'):
             operand = stack_operands.pop()
-            type = stack_types.pop()
+            stack_types.pop()
             operator = stack_operators.pop()
 
             quad = [operator,None,None,operand]
@@ -676,7 +774,7 @@ def p_pn_write(p):
     if (len(stack_operators) > 0):
         if (stack_operators[-1] == 'write'):
             operand = stack_operands.pop()
-            type = stack_types.pop()
+            stack_types.pop()
             operator = stack_operators.pop()
 
             quad = [operator,None,None,operand]
@@ -685,7 +783,7 @@ def p_pn_write(p):
 # comparacion
 def p_pn_and(p):
     'pn_and :'
-    global stack_operators, stack_operands, nextTemp, stack_types
+    global stack_operators, stack_operands, stack_types
     #print("\n pn_and")
     #print(stack_operators)
     ##print(stack_operands)
@@ -703,12 +801,12 @@ def p_pn_and(p):
             if result_type is not None :
                 #print("entre")
                 #print(result_type)
-                result = 't' + str(nextTemp)
+                result = nextAddress(result_type)
+                symbols[current_function]['count'][result_type] += 1
                 quad = [operator,left_operand,right_operand,result]
                 quadruples.append(quad)
                 stack_operands.append(result)
                 stack_types.append(result_type)
-                nextTemp += 1
                 #print("termino if")
             else:
                 # To Do
@@ -720,7 +818,7 @@ def p_pn_and(p):
 
 def p_pn_or(p):
     'pn_or : '
-    global stack_operators, stack_operands, nextTemp, stack_types
+    global stack_operators, stack_operands, stack_types
     #print("\n pn_or")
     #print(stack_operators)
     #print(stack_operands)
@@ -736,12 +834,12 @@ def p_pn_or(p):
             result_type = cuboSemantico.typeOperator[left_type][right_type][operator]
 
             if result_type is not None :
-                result = 't' + str(nextTemp)
+                result = nextAddress(result_type)
+                symbols[current_function]['count'][result_type] += 1
                 quad = [operator,left_operand,right_operand,result]
                 quadruples.append(quad)
                 stack_operands.append(result)
                 stack_types.append(result_type)
-                nextTemp += 1
             else:
                 # To Do
                 # Hacer mas especifico este error
@@ -751,7 +849,7 @@ def p_pn_or(p):
 # decision
 def p_pn_comparison(p):
     'pn_comparison : '
-    global stack_operands, stack_types, stack_operators, quadruples, nextTemp
+    global stack_operands, stack_types, stack_operators, quadruples
     if (len(stack_operators) > 0):
         if (stack_operators[-1] == '<' or stack_operators[-1] == '>' or stack_operators[-1] == '=='):
             right_operand = stack_operands.pop()
@@ -766,12 +864,12 @@ def p_pn_comparison(p):
             #print(operator)
             #print(result_type)
             if result_type is not None :
-                result = 't' + str(nextTemp)
+                result = nextAddress(result_type)
+                symbols[current_function]['count'][result_type] += 1
                 quad = [operator,left_operand,right_operand,result]
                 quadruples.append(quad)
                 stack_operands.append(result)
                 stack_types.append(result_type)
-                nextTemp += 1
             else:
                 # To Do
                 # Hacer mas especifico este error
@@ -848,9 +946,9 @@ def p_pn_while_3(p):
 def p_pn_for_push_comparison(p):
     'pn_for_push_comparison : '
     #print("pn_for_push_comparison")
-    global stack_operands, stack_types, quadruples, stack_jumps, quadruples
+    global stack_operands, stack_types, quadruples, stack_jumps, quadruples, current_func
 
-    stack_operands.append(current_var)
+    stack_operands.append(symbols[current_function][current_var]['address'])
     stack_types.append(current_type)
     stack_operators.append('==')
 
@@ -894,6 +992,7 @@ def p_pn_for_go_back(p):
 def p_pn_add_function(p):
     'pn_add_function : '
     global symbols, current_function, current_param_count, current_func_var_count
+    resetCounters()
     current_function = p[-1]
     current_param_count = 0
     current_func_var_count = 0
@@ -903,9 +1002,20 @@ def p_pn_add_function(p):
             'return_type': current_type,
             'param': {},
             'vars': {},
-            'param_count': 0,
-            'var_count' : 0
+            'count': {
+                'int': 0,
+                'float': 0,
+                'char': 0,
+                'bool': 0
+            }
         }
+        if (current_type != 'void'):
+            symbols['global']['vars'][p[-1]] = {
+                'name': p[-1],
+                'address': nextAddress(current_type),
+                'type': current_type
+            }
+            symbols[current_function]['count'][current_type] += 1
     else:
         print("Error: Function has already been declared")
         sys.exit()
@@ -919,8 +1029,10 @@ def p_pn_add_parameter(p):
     if (symbols['global']['vars'].get(p[-1]) is None):
         symbols[current_function]['param'][p[-1]] = {
             'name': p[-1],
+            'address': nextAddress(current_type),
             'type': current_type
         }
+        symbols[current_function]['count'][current_type] += 1
         current_param_count += 1
     else:
         print("Error in function parameters declaration")
@@ -985,7 +1097,9 @@ def p_pn_verify_argument(p):
     if (current_param_count <= len(param)):
         if(symbols[current_function_call]['param'][param[current_param_count-1]]['type'] == arg_type):
             #print("flag")
-            quad = ["param", arg_name, None, "p" + str(current_param_count)]
+            # To Do
+            # Checar si el param1 tmb se pone como direccion
+            quad = ['param', arg_name, None, "p" + str(current_param_count)]
             quadruples.append(quad)
             #print("flag")
         else:
@@ -998,26 +1112,25 @@ def p_pn_verify_argument(p):
 
 def p_pn_func_gosub(p):
     'pn_func_gosub : '
-    global current_function_call, symbols, quadruples, nextTemp
-    quad = ["gosub",current_function_call,None,]
+    global current_function_call, symbols, quadruples, current_function
+    quad = ["gosub",None,None,current_function_call]
     quadruples.append(quad)
-    #stack_operands.append(current_function_call)
-    #stack_types.append(symbols[current_function_call]['return_type'])
-    result = 't' + str(nextTemp)
     result_type = symbols[current_function_call]['return_type']
-    quad = ["=", current_function_call,None,result]
-    quadruples.append(quad)
-    stack_operands.pop()
-    stack_types.pop()
-    stack_operators.pop()
-    stack_operands.append(result)
-    stack_types.append(result_type)
-    nextTemp += 1
+    if (result_type != 'void'):
+        result = nextAddress(result_type)
+        symbols[current_function]['count'][result_type] += 1
+        quad = ["=", symbols['global']['vars'][current_function_call]['address'],None,result]
+        quadruples.append(quad)
+        stack_operands.pop()
+        stack_types.pop()
+        stack_operators.pop()
+        stack_operands.append(result)
+        stack_types.append(result_type)
 
 # retorno
 def p_pn_retorno(p):
     'pn_retorno :'
-    global stack_operators, stack_operands, nextTemp, stack_types, current_function
+    global stack_operators, stack_operands, stack_types, current_function
     if (len(stack_operators) > 0):
         if (stack_operators[-1] == 'return'):
             right_operand = stack_operands.pop()
@@ -1066,11 +1179,11 @@ try:
         'quadruples': quadruples,
         'constants': constants
     }
-    #with open(data + 'o', 'w') as file:
-        #file.write(str(object_code))
+    with open('output.txt', 'w') as file:
+        file.write(str(object_code))
 except:
-    counter = 0
-    for q in quadruples:
-        print(str(counter) + ". " + str(q))
-        counter += 1
+    #counter = 0
+    #for q in quadruples:
+        #print(str(counter) + ". " + str(q))
+        #counter += 1
     print("No se pudo compilar el programa")
