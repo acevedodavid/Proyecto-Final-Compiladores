@@ -5,18 +5,14 @@ var int : i,j;
 void module uno(int a)
 var int : k;
 {
-  k = a * 2;
-  if (k < a + 4) then
-  {
-    uno(a + 1);
-  }
-  write(k);
+  write(a);
 }
 
 int module dos(int b)
 {
   b = b * i + j;
-  return(b*2);
+  write(b);
+  return(b);
 }
 
 main()

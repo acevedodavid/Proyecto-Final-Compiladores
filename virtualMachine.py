@@ -16,6 +16,11 @@ symbols = []
 quadruples = []
 constants = []
 
+ip = []  # Sirve para regresar de la funcion
+current_function = []  # Sirve para saber la funcion actual
+param_list = {}  # Guardo los parametros de la funcion
+returnArray = []
+
 # To do
 # Checar que los tipos de datos se manejen bien (se guarden como fload, entero, etc...)
 
@@ -33,10 +38,10 @@ else:
 
 # Init new space of local memory in the stack
 def initFunctionMemory(function):
-  global symbols, local_memory
-  lc = symbols[function]['count']
-  #print(lc)
-  local_memory.append(memory.Memory(lc['int'],lc['float'],lc['char'],lc['bool']))
+  global symbols, local_memory,current_function
+  lc = symbols[function]['count'] # gets count from the given function
+  local_memory.append(memory.Memory(lc['int'],lc['float'],lc['char'],lc['bool'])) # creates new instance of memory with space necessary for given function and pushes it to stack
+  current_function.append(function)
 
 # Aux variables
 gc = symbols['global']['count'] # global count
@@ -54,11 +59,6 @@ for key, value in constants['data'].items():
 
 # Init local_memory stack with main
 initFunctionMemory('main')
-
-ip = []  # Sirve para regresar de la funcion
-curr_function= []  # Sirve para saber la funcion actual
-stack_param = []  # Guardo los parametros de la funcion
-returnArray = []
 
 ######### HASTA AQUI ESTA TODO CM #########
 
@@ -78,6 +78,20 @@ def get_val(address):
     sys.exit()
   return 0
 
+def get_type(address):
+  var_type = int(address / 10000) % 10
+  if var_type == 0:
+    return 'int'
+  elif var_type == 1:
+    return 'float'
+  elif var_type == 2:
+    return 'char'
+  elif var_type == 3:
+    return 'bool'
+  else:
+    print("Error en get_type")
+    sys.exit()
+
 def update(address, val):
   memory_type = (int(address / 100000)) % 10
   if memory_type == 0:
@@ -95,18 +109,21 @@ def update(address, val):
 
 # Iterate through quadruples
 def run(quad, pointer):
-  global pointer
   #print("\nrun")
   #print(quad)
+
+  global param_list, current_function
 
   if quad[0] == 'GOTO':
     return quad[3]
 
   if quad[0] == 'GOTOF':
+    #print(get_val(quad[1]))
     if (get_val(quad[1])):
       return pointer + 1
     else:
       return quad[3]
+      #print(quad[3])
 
   # To Do
   # Checar que el siguiente paso sea pointer + 1
@@ -117,16 +134,33 @@ def run(quad, pointer):
   # To Do
   # Checar bien como se hace esta
   if quad[0] == 'gosub':
-    print("Aun no funciono")
+    ip.append(pointer + 1)
+    #print(param_list)
+    for key, val in param_list.items():
+      update(key,val)
+      #local_memory[-1].update(key,val)
+    param_list = {}
+    #print(symbols[quad[3]]['start'])
+    #sys.exit()
+    return symbols[quad[3]]['start']
 
   if quad[0] == 'param':
-    print("Aun no funciono")
+    param_list[quad[3]] = get_val(quad[1])
+    #print(param_list)
+    return pointer + 1
 
   if quad[0] == 'return':
-    print("Aun no funciono")
+    #print("return")
+    address = symbols['global']['vars'][current_function[-1]]['address']
+    #print(address)
+    update(address, get_val(quad[3]))
+    #sys.exit()
+    return pointer + 1
 
   if quad[0] == 'ENDFunc':
-    print("Aun no funciono")
+    local_memory.pop()
+    current_function.pop()
+    return ip.pop()
 
   if quad[0] == '=':
     operand_val = get_val(quad[1])
@@ -154,7 +188,10 @@ def run(quad, pointer):
   if quad[0] == '/':
     left_operand = get_val(quad[1])
     right_operand = get_val(quad[2])
-    update(quad[3],left_operand * right_operand)
+    result = left_operand / right_operand
+    if (get_type(left_operand) == 'int' and get_type(left_operand) == 'int'):
+      result = int(result)
+    update(quad[3],result)
     return pointer + 1
 
   if quad[0] == '>':
@@ -188,6 +225,7 @@ def run(quad, pointer):
     return pointer + 1
 
   if quad[0] == 'write':
+    #print(quad[3])
     print(get_val(quad[3]))
     return pointer + 1
 
@@ -203,6 +241,8 @@ def run(quad, pointer):
 
 
 pointer = 0
+#print(constants)
+#print(constant_memory)
 while (pointer < len(quadruples)):
     # Se envia a la funcion el cuadruplo y su indice
     #print(quadruples[pointer])

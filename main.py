@@ -12,7 +12,6 @@ import lex
 import yacc
 import sys
 import cuboSemantico
-import tablaVariables
 
 quadruples = [['GOTO',None,None,0]]
 
@@ -226,11 +225,11 @@ def p_program(p):
               | PROGRAM ID SEMICOLON vars pn_go_main main pn_program_end
               | PROGRAM ID SEMICOLON aux_funcion pn_go_main main pn_program_end
               | PROGRAM ID SEMICOLON pn_go_main main pn_program_end'''
-    print("\nQuadruples")
-    counter = 0
-    for q in quadruples:
-        print(str(counter) + ". " + str(q))
-        counter += 1
+    #print("\nQuadruples")
+    #counter = 0
+    #for q in quadruples:
+        #print(str(counter) + ". " + str(q))
+        #counter += 1
     #print(symbols)
 
 def p_main(p):
@@ -773,12 +772,14 @@ def p_pn_write(p):
     'pn_write : '
     if (len(stack_operators) > 0):
         if (stack_operators[-1] == 'write'):
+            #print(stack_operands)
             operand = stack_operands.pop()
             stack_types.pop()
             operator = stack_operators.pop()
 
             quad = [operator,None,None,operand]
             quadruples.append(quad)
+            #print(quadruples)
 
 # comparacion
 def p_pn_and(p):
@@ -903,6 +904,8 @@ def p_pn_if_2(p):
 def p_pn_else(p):
     'pn_else : '
     global stack_jumps, quadruples
+    quad = ['GOTO',None,None,'.pending_jump']
+    quadruples.append(quad)
     endOfElse = stack_jumps.pop()
     stack_jumps.append(len(quadruples)-1)
     fill(endOfElse,len(quadruples))
@@ -930,7 +933,6 @@ def p_pn_while_2(p):
 
 def p_pn_while_3(p):
     'pn_while_3 : '
-    print('pn_while_3')
     global stack_jumps, quadruples
     endOfWhile = stack_jumps.pop()
 
@@ -939,7 +941,6 @@ def p_pn_while_3(p):
     quadruples.append(quad)
 
     fill(endOfWhile,len(quadruples))
-    print('saliendo 3')
 
 # no_condicional (FOR)
 
@@ -992,8 +993,6 @@ def p_pn_for_go_back(p):
 def p_pn_add_function(p):
     'pn_add_function : '
     global symbols, current_function, current_param_count, current_func_var_count
-    resetCounters()
-    current_function = p[-1]
     current_param_count = 0
     current_func_var_count = 0
     if (symbols.get(p[-1]) is None):
@@ -1010,12 +1009,28 @@ def p_pn_add_function(p):
             }
         }
         if (current_type != 'void'):
-            symbols['global']['vars'][p[-1]] = {
-                'name': p[-1],
-                'address': nextAddress(current_type),
-                'type': current_type
-            }
-            symbols[current_function]['count'][current_type] += 1
+          next_address = global_b
+          if (current_type == 'int'):
+            next_address += symbols['global']['count']['int']
+            symbols['global']['count']['int'] += 1
+          elif (current_type == 'float'):
+            next_address += symbols['global']['count']['float']
+            symbols['global']['count']['float'] += 1
+          elif (current_type == 'char'):
+            next_address += symbols['global']['count']['char']
+            symbols['global']['count']['char'] += 1
+          elif (current_type == 'bool'):
+            next_address += symbols['global']['count']['bool']
+            symbols['global']['count']['bool'] += 1
+
+          symbols['global']['vars'][p[-1]] = {
+              'name': p[-1],
+              'address': next_address,
+              'type': current_type
+          }
+          symbols[current_function]['count'][current_type] += 1
+        current_function = p[-1]
+        resetCounters()
     else:
         print("Error: Function has already been declared")
         sys.exit()
@@ -1087,24 +1102,16 @@ def p_pn_verify_argument(p):
     global current_param_count, symbols, quadruples, current_function_call
     arg_name = stack_operands.pop()
     arg_type = stack_types.pop()
-    param = list(symbols[current_function_call]['param'])
-    #print(arg_name)
-    #print(arg_type)
-    #print(param)
-    #print(current_function_call)
+    param_list = list(symbols[current_function_call]['param'])
 
     #print(current_param_count)
-    if (current_param_count <= len(param)):
-        if(symbols[current_function_call]['param'][param[current_param_count-1]]['type'] == arg_type):
-            #print("flag")
-            # To Do
-            # Checar si el param1 tmb se pone como direccion
-            quad = ['param', arg_name, None, "p" + str(current_param_count)]
-            quadruples.append(quad)
-            #print("flag")
-        else:
-            print("No concuerda el tipo de parametro de la funcion")
-            sys.exit()
+    if (current_param_count <= len(param_list)):
+      if(symbols[current_function_call]['param'][param_list[current_param_count-1]]['type'] == arg_type):
+          quad = ['param', arg_name, None, symbols[current_function_call]['param'][param_list[current_param_count-1]]['address']]
+          quadruples.append(quad)
+      else:
+          print("No concuerda el tipo de parametro de la funcion")
+          sys.exit()
     else:
         print("Hay más parametros de los que pide la funcion")
         sys.exit()
@@ -1149,7 +1156,8 @@ def p_pn_retorno(p):
 # Auxiliary functions
 
 def fill(quad_number, jumpTo): #quad_number = int, jumpTo = int
-    global quadruples
+    global quadruples, stack_jumps
+    #print(stack_jumps)
     quadruples[quad_number][3] = jumpTo
 
 parser = yacc.yacc()
